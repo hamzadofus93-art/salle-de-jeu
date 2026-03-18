@@ -384,15 +384,52 @@ function formatZoneSummary(tables) {
 
 function renderLobby() {
   const tables = getTables();
+  const poolTables = tables.filter((table) => table.discipline === "Pool anglais");
+  const snookerTables = tables.filter((table) => table.discipline === "Snooker");
   const totalWaitingPlayers = tables.reduce(
     (count, table) => count + (table.waitingPlayers?.length || 0),
     0,
   );
 
   elements.lobbySummary.textContent = `${totalWaitingPlayers} en attente`;
-  elements.lobbyList.innerHTML = tables
-    .map((table) => createLobbyItemMarkup(table))
-    .join("");
+  elements.lobbyList.innerHTML = [
+    createLobbySectionMarkup({
+      title: "Section Pool",
+      kicker: "Arena 01",
+      tables: poolTables,
+      theme: "pool",
+    }),
+    createLobbySectionMarkup({
+      title: "Section Snooker",
+      kicker: "Arena 02",
+      tables: snookerTables,
+      theme: "snooker",
+    }),
+  ].join("");
+}
+
+function createLobbySectionMarkup({ title, kicker, tables, theme }) {
+  const waitingCount = tables.reduce(
+    (count, table) => count + (table.waitingPlayers?.length || 0),
+    0,
+  );
+
+  return `
+    <section class="lobby-section lobby-section--${theme}">
+      <div class="lobby-section-head">
+        <div>
+          <p class="section-kicker">${escapeHtml(kicker)}</p>
+          <h3>${escapeHtml(title)}</h3>
+        </div>
+        <span class="detail-pill ${waitingCount ? "" : "subtle"}">
+          ${waitingCount} en attente
+        </span>
+      </div>
+      <div class="lobby-section-grid">
+        ${tables.map((table) => createLobbyItemMarkup(table)).join("")}
+      </div>
+    </section>
+  `;
 }
 
 function createLobbyItemMarkup(table) {

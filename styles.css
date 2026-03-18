@@ -803,7 +803,50 @@ button:disabled {
 }
 
 .lobby-list {
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+.lobby-section {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 26px;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft);
+}
+
+.lobby-section--pool {
+  background:
+    radial-gradient(circle at top right, rgba(47, 156, 255, 0.1), transparent 30%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(246, 248, 252, 0.98));
+}
+
+.lobby-section--snooker {
+  background:
+    radial-gradient(circle at top right, rgba(255, 39, 46, 0.1), transparent 30%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(252, 246, 247, 0.98));
+}
+
+.lobby-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: end;
+}
+
+.lobby-section-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.32rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.lobby-section-grid {
+  display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
 }
 
 .table-card,
@@ -1410,6 +1453,7 @@ button:disabled {
   .table-card-head,
   .table-bottomline,
   .leaderboard-topline,
+  .lobby-section-head,
   .waiting-section-head,
   .zone-heading,
   .lobby-item-head {
@@ -1459,7 +1503,8 @@ button:disabled {
 
   .tables-grid,
   .active-strip,
-  .lobby-list {
+  .lobby-list,
+  .lobby-section-grid {
     grid-template-columns: 1fr;
   }
 
