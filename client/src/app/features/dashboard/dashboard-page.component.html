@@ -1,0 +1,849 @@
+<div class="dashboard-shell">
+  <div class="container py-4 py-lg-5">
+    <div class="hero-panel p-4 p-xl-5 mb-4">
+      <div class="d-flex flex-column flex-xl-row gap-4 justify-content-between">
+        <div class="hero-copy">
+          <div class="phoenix-lockup hero-brand" aria-label="Phoenix Snooker Club">
+            <div class="phoenix-word">
+              PHOEN<span class="phoenix-i">I</span>X
+            </div>
+            <div class="phoenix-subline">
+              <div class="phoenix-stripes" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <span class="phoenix-club">Snooker Club</span>
+            </div>
+          </div>
+          <p class="eyebrow text-uppercase small fw-semibold mb-2">
+            Control room
+          </p>
+          <h1 class="display-5 fw-bold text-dark mb-3">Dashboard temps reel</h1>
+          <p class="lead mb-0">
+            Angular pilote maintenant les reservations, les tables, les matchs et
+            la gestion des comptes avec une interface inspiree directement du
+            logo Phoenix.
+          </p>
+        </div>
+
+        <div class="session-panel d-flex flex-column gap-3">
+          <div>
+            <p class="text-uppercase text-secondary small fw-semibold mb-1">
+              Session active
+            </p>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <h2 class="h5 mb-0">{{ user?.displayName }}</h2>
+              <span class="badge text-bg-dark">{{ user?.role }}</span>
+              <span
+                class="badge"
+                [ngClass]="user?.isActive ? 'text-bg-success' : 'text-bg-secondary'"
+              >
+                {{ user?.isActive ? 'Actif' : 'Desactive' }}
+              </span>
+            </div>
+            <p class="text-secondary mb-0">{{ user?.username }}</p>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button
+              class="btn btn-outline-dark"
+              type="button"
+              (click)="refresh()"
+              [disabled]="isLoading || isRefreshing"
+            >
+              <span
+                *ngIf="isRefreshing"
+                class="spinner-border spinner-border-sm me-2"
+              ></span>
+              Actualiser les donnees
+            </button>
+            <button class="btn btn-danger" type="button" (click)="logout()">
+              Deconnexion
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="errorMessage" class="alert alert-danger mb-4" role="alert">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="successMessage" class="alert alert-success mb-4" role="alert">
+      {{ successMessage }}
+    </div>
+
+    <div *ngIf="isLoading" class="section-card p-5 text-center">
+      <div class="spinner-border text-danger mb-3" role="status"></div>
+      <p class="mb-0 text-secondary">Chargement du dashboard...</p>
+    </div>
+
+    <ng-container *ngIf="dashboardState as state">
+      <div class="row g-3 mb-4">
+        <div class="col-md-6 col-xl-3">
+          <div class="stat-card h-100 p-4 shadow-sm">
+            <p class="text-uppercase text-secondary small fw-semibold mb-2">
+              Tables libres
+            </p>
+            <div class="stat-value fw-bold text-dark">{{ summary?.freeCount }}</div>
+            <p class="text-secondary mb-0">Disponibles pour une reservation.</p>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+          <div class="stat-card h-100 p-4 shadow-sm">
+            <p class="text-uppercase text-secondary small fw-semibold mb-2">
+              Tables occupees
+            </p>
+            <div class="stat-value fw-bold text-dark">
+              {{ summary?.activeCount }}
+            </div>
+            <p class="text-secondary mb-0">Matchs actuellement en cours.</p>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+          <div class="stat-card h-100 p-4 shadow-sm">
+            <p class="text-uppercase text-secondary small fw-semibold mb-2">
+              Sessions archivees
+            </p>
+            <div class="stat-value fw-bold text-dark">
+              {{ summary?.archiveCount }}
+            </div>
+            <p class="text-secondary mb-0">Historique total en base.</p>
+          </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+          <div class="stat-card h-100 p-4 shadow-sm">
+            <p class="text-uppercase text-secondary small fw-semibold mb-2">
+              Taux d'occupation
+            </p>
+            <div class="stat-value fw-bold text-dark">
+              {{ summary?.occupancyRate }}%
+            </div>
+            <p class="text-secondary mb-0">Occupation instantanee du club.</p>
+          </div>
+        </div>
+      </div>
+
+      <ul class="nav section-nav flex-wrap mb-4">
+        <li class="nav-item">
+          <button
+            class="nav-link"
+            type="button"
+            [class.active]="activeSection === 'overview'"
+            [class.text-white]="activeSection === 'overview'"
+            (click)="setSection('overview')"
+          >
+            Vue d'ensemble
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link"
+            type="button"
+            [class.active]="activeSection === 'tables'"
+            [class.text-white]="activeSection === 'tables'"
+            (click)="setSection('tables')"
+          >
+            Tables
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link"
+            type="button"
+            [class.active]="activeSection === 'matches'"
+            [class.text-white]="activeSection === 'matches'"
+            (click)="setSection('matches')"
+          >
+            Matchs
+          </button>
+        </li>
+        <li class="nav-item">
+          <button
+            class="nav-link"
+            type="button"
+            [class.active]="activeSection === 'performance'"
+            [class.text-white]="activeSection === 'performance'"
+            (click)="setSection('performance')"
+          >
+            Performance
+          </button>
+        </li>
+        <li class="nav-item" *ngIf="isSudo">
+          <button
+            class="nav-link"
+            type="button"
+            [class.active]="activeSection === 'accounts'"
+            [class.text-white]="activeSection === 'accounts'"
+            (click)="setSection('accounts')"
+          >
+            Comptes admins
+          </button>
+        </li>
+      </ul>
+
+      <div *ngIf="activeSection === 'overview'" class="row g-4">
+        <div class="col-xl-7">
+          <div class="section-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-start mb-4">
+              <div>
+                <p class="text-uppercase text-secondary small fw-semibold mb-2">
+                  Activite live
+                </p>
+                <h2 class="h4 mb-0">Tables actuellement occupees</h2>
+              </div>
+              <span class="badge text-bg-dark">{{ activeTables.length }} actives</span>
+            </div>
+
+            <div *ngIf="activeTables.length; else noActiveTables" class="row g-3">
+              <div class="col-lg-6" *ngFor="let table of activeTables">
+                <div class="active-card h-100 p-4">
+                  <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                      <p class="text-uppercase text-white-50 small fw-semibold mb-1">
+                        {{ table.shortDiscipline }}
+                      </p>
+                      <h3 class="h5 mb-0">{{ table.name }}</h3>
+                    </div>
+                    <span class="badge text-bg-danger">Occupee</span>
+                  </div>
+
+                  <div *ngIf="table.currentMatch as match">
+                    <p class="mb-2">
+                      <strong>{{ match.playerOne }}</strong>
+                      <span class="text-white-50 mx-2">vs</span>
+                      <strong>{{ match.playerTwo }}</strong>
+                    </p>
+                    <p class="text-white-50 mb-2">
+                      Debut: {{ match.startedAt | date: 'short' }}
+                    </p>
+                    <p class="text-white-50 mb-0">
+                      Format:
+                      {{
+                        match.durationMinutes
+                          ? match.durationMinutes + ' min'
+                          : 'Libre'
+                      }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noActiveTables>
+              <div class="empty-state p-4 text-center text-secondary">
+                Aucune table n'est occupee pour le moment.
+              </div>
+            </ng-template>
+          </div>
+        </div>
+
+        <div class="col-xl-5">
+          <div class="section-card p-4 h-100">
+            <p class="text-uppercase text-secondary small fw-semibold mb-2">
+              Resume operationnel
+            </p>
+            <h2 class="h4 mb-4">Capacite et performance</h2>
+
+            <div class="d-grid gap-3">
+              <div class="table-card p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h3 class="h6 mb-1">Zone Pool anglais</h3>
+                    <p class="text-secondary mb-0">{{ poolTables.length }} tables</p>
+                  </div>
+                  <span class="badge text-bg-primary">
+                    {{ activePoolTablesCount }} actives
+                  </span>
+                </div>
+              </div>
+
+              <div class="table-card p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h3 class="h6 mb-1">Zone Snooker</h3>
+                    <p class="text-secondary mb-0">{{ snookerTables.length }} tables</p>
+                  </div>
+                  <span class="badge text-bg-success">
+                    {{ activeSnookerTablesCount }} actives
+                  </span>
+                </div>
+              </div>
+
+              <div
+                class="table-card p-3"
+                *ngIf="summary?.topPlayer as topPlayer; else noTopPlayer"
+              >
+                <p class="text-uppercase text-secondary small fw-semibold mb-2">
+                  Leader actuel
+                </p>
+                <h3 class="h5 mb-1">{{ topPlayer.name }}</h3>
+                <p class="mb-1">{{ topPlayer.wins }} victoire(s) au total</p>
+                <p class="text-secondary mb-0">
+                  Dernier succes: {{ topPlayer.lastWinAt | date: 'short' }}
+                </p>
+              </div>
+
+              <ng-template #noTopPlayer>
+                <div class="table-card p-3">
+                  <p class="text-uppercase text-secondary small fw-semibold mb-2">
+                    Leader actuel
+                  </p>
+                  <p class="text-secondary mb-0">
+                    Aucun classement disponible pour l'instant.
+                  </p>
+                </div>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="activeSection === 'tables'" class="row g-4">
+        <div class="col-xl-6">
+          <div class="section-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <p class="text-uppercase text-secondary small fw-semibold mb-2">
+                  Tables Pool
+                </p>
+                <h2 class="h4 mb-0">Reservations rapides</h2>
+              </div>
+              <span class="badge text-bg-primary">{{ poolTables.length }}</span>
+            </div>
+
+            <div class="d-grid gap-3">
+              <div class="table-card p-3" *ngFor="let table of poolTables">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                  <div>
+                    <h3 class="h5 mb-1">{{ table.name }}</h3>
+                    <p class="text-secondary mb-0">{{ table.discipline }}</p>
+                  </div>
+                  <span
+                    class="badge"
+                    [ngClass]="
+                      table.status === 'free' ? 'text-bg-success' : 'text-bg-danger'
+                    "
+                  >
+                    {{ table.status === 'free' ? 'Libre' : 'Occupee' }}
+                  </span>
+                </div>
+
+                <div *ngIf="table.currentMatch as match" class="small text-secondary mb-3">
+                  En jeu: {{ match.playerOne }} vs {{ match.playerTwo }}
+                </div>
+
+                <div class="queue-list mb-3">
+                  <div class="queue-item p-3" *ngFor="let entry of table.waitingPlayers">
+                    <div class="d-flex justify-content-between align-items-center gap-3">
+                      <div>
+                        <div class="fw-semibold">
+                          #{{ entry.position }} {{ entry.playerName }}
+                        </div>
+                        <div class="small text-secondary">
+                          Ajoute le {{ entry.createdAt | date: 'short' }}
+                        </div>
+                      </div>
+                      <button
+                        class="btn btn-sm btn-outline-danger"
+                        type="button"
+                        (click)="removeWaitingPlayer(table, entry)"
+                      >
+                        Retirer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div *ngIf="!table.waitingPlayers.length" class="small text-secondary mb-3">
+                  Aucun joueur en attente.
+                </div>
+
+                <div class="input-group">
+                  <input
+                    class="form-control"
+                    type="text"
+                    [name]="'waiting-pool-' + table.id"
+                    [(ngModel)]="waitingDrafts[table.id]"
+                    placeholder="Ajouter un joueur en file d'attente"
+                  />
+                  <button
+                    class="btn btn-outline-dark"
+                    type="button"
+                    (click)="addWaitingPlayer(table)"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-6">
+          <div class="section-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <p class="text-uppercase text-secondary small fw-semibold mb-2">
+                  Tables Snooker
+                </p>
+                <h2 class="h4 mb-0">Gestion de la file d'attente</h2>
+              </div>
+              <span class="badge text-bg-success">{{ snookerTables.length }}</span>
+            </div>
+
+            <div class="d-grid gap-3">
+              <div class="table-card p-3" *ngFor="let table of snookerTables">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                  <div>
+                    <h3 class="h5 mb-1">{{ table.name }}</h3>
+                    <p class="text-secondary mb-0">{{ table.discipline }}</p>
+                  </div>
+                  <span
+                    class="badge"
+                    [ngClass]="
+                      table.status === 'free' ? 'text-bg-success' : 'text-bg-danger'
+                    "
+                  >
+                    {{ table.status === 'free' ? 'Libre' : 'Occupee' }}
+                  </span>
+                </div>
+
+                <div *ngIf="table.currentMatch as match" class="small text-secondary mb-3">
+                  En jeu: {{ match.playerOne }} vs {{ match.playerTwo }}
+                </div>
+
+                <div class="queue-list mb-3">
+                  <div class="queue-item p-3" *ngFor="let entry of table.waitingPlayers">
+                    <div class="d-flex justify-content-between align-items-center gap-3">
+                      <div>
+                        <div class="fw-semibold">
+                          #{{ entry.position }} {{ entry.playerName }}
+                        </div>
+                        <div class="small text-secondary">
+                          Ajoute le {{ entry.createdAt | date: 'short' }}
+                        </div>
+                      </div>
+                      <button
+                        class="btn btn-sm btn-outline-danger"
+                        type="button"
+                        (click)="removeWaitingPlayer(table, entry)"
+                      >
+                        Retirer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div *ngIf="!table.waitingPlayers.length" class="small text-secondary mb-3">
+                  Aucun joueur en attente.
+                </div>
+
+                <div class="input-group">
+                  <input
+                    class="form-control"
+                    type="text"
+                    [name]="'waiting-snooker-' + table.id"
+                    [(ngModel)]="waitingDrafts[table.id]"
+                    placeholder="Ajouter un joueur en file d'attente"
+                  />
+                  <button
+                    class="btn btn-outline-dark"
+                    type="button"
+                    (click)="addWaitingPlayer(table)"
+                  >
+                    Ajouter
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="activeSection === 'matches'" class="row g-4">
+        <div class="col-xl-6">
+          <div class="section-card p-4 h-100">
+            <p class="text-uppercase text-secondary small fw-semibold mb-2">
+              Nouveau match
+            </p>
+            <h2 class="h4 mb-4">Demarrer une reservation</h2>
+
+            <form class="d-grid gap-3" (ngSubmit)="startMatch()" #startMatchForm="ngForm">
+              <div>
+                <label for="start-table" class="form-label">Table libre</label>
+                <select
+                  id="start-table"
+                  name="startTable"
+                  class="form-select"
+                  [(ngModel)]="startForm.tableId"
+                  required
+                >
+                  <option value="" disabled>Choisir une table</option>
+                  <option *ngFor="let table of freeTables" [value]="table.id">
+                    {{ table.name }} - {{ table.discipline }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="player-one" class="form-label">Joueur 1</label>
+                  <input
+                    id="player-one"
+                    name="playerOne"
+                    class="form-control"
+                    type="text"
+                    [(ngModel)]="startForm.playerOne"
+                    required
+                  />
+                </div>
+
+                <div class="col-md-6">
+                  <label for="player-two" class="form-label">Joueur 2</label>
+                  <input
+                    id="player-two"
+                    name="playerTwo"
+                    class="form-control"
+                    type="text"
+                    [(ngModel)]="startForm.playerTwo"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div *ngIf="selectedStartTable?.discipline === 'Pool anglais'">
+                <label for="duration" class="form-label">Duree (minutes)</label>
+                <input
+                  id="duration"
+                  name="durationMinutes"
+                  class="form-control"
+                  type="number"
+                  min="15"
+                  step="15"
+                  [(ngModel)]="startForm.durationMinutes"
+                />
+              </div>
+
+              <div>
+                <label for="start-note" class="form-label">Note</label>
+                <textarea
+                  id="start-note"
+                  name="startNote"
+                  class="form-control"
+                  rows="3"
+                  [(ngModel)]="startForm.note"
+                  placeholder="Optionnel: tournoi interne, reservation VIP..."
+                ></textarea>
+              </div>
+
+              <button
+                class="btn btn-danger"
+                type="submit"
+                [disabled]="startMatchForm.invalid || !freeTables.length"
+              >
+                Demarrer le match
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="col-xl-6">
+          <div class="section-card p-4 h-100">
+            <p class="text-uppercase text-secondary small fw-semibold mb-2">
+              Cloture
+            </p>
+            <h2 class="h4 mb-4">Terminer un match actif</h2>
+
+            <form class="d-grid gap-3" (ngSubmit)="finishMatch()" #finishMatchForm="ngForm">
+              <div>
+                <label for="finish-match" class="form-label">Match actif</label>
+                <select
+                  id="finish-match"
+                  name="finishMatch"
+                  class="form-select"
+                  [(ngModel)]="finishForm.matchId"
+                  required
+                >
+                  <option value="" disabled>Choisir un match</option>
+                  <option *ngFor="let table of activeTables" [value]="table.currentMatch?.id">
+                    {{ table.name }} - {{ table.currentMatch?.playerOne }} vs
+                    {{ table.currentMatch?.playerTwo }}
+                  </option>
+                </select>
+              </div>
+
+              <div *ngIf="selectedFinishMatch as match">
+                <label for="winner" class="form-label">Vainqueur</label>
+                <select
+                  id="winner"
+                  name="winner"
+                  class="form-select"
+                  [(ngModel)]="finishForm.winner"
+                  required
+                >
+                  <option [value]="match.playerOne">{{ match.playerOne }}</option>
+                  <option [value]="match.playerTwo">{{ match.playerTwo }}</option>
+                </select>
+              </div>
+
+              <div *ngIf="selectedFinishTable as table" class="table-card p-3">
+                <h3 class="h6 mb-2">Recap</h3>
+                <p class="mb-1">{{ table.name }} - {{ table.discipline }}</p>
+                <p class="text-secondary mb-0">
+                  Debut: {{ table.currentMatch?.startedAt | date: 'short' }}
+                </p>
+              </div>
+
+              <div>
+                <label for="finish-note" class="form-label">Note de fin</label>
+                <textarea
+                  id="finish-note"
+                  name="finishNote"
+                  class="form-control"
+                  rows="3"
+                  [(ngModel)]="finishForm.note"
+                  placeholder="Exemple: belle finale, casse remarquable..."
+                ></textarea>
+              </div>
+
+              <button
+                class="btn btn-outline-dark"
+                type="submit"
+                [disabled]="finishMatchForm.invalid || !activeTables.length"
+              >
+                Cloturer le match
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="activeSection === 'performance'" class="row g-4">
+        <div class="col-xl-5">
+          <div class="section-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <p class="text-uppercase text-secondary small fw-semibold mb-2">
+                  Leaderboard
+                </p>
+                <h2 class="h4 mb-0">Meilleurs joueurs</h2>
+              </div>
+              <span class="badge text-bg-dark">{{ state.leaderboard.length }}</span>
+            </div>
+
+            <div class="d-grid gap-3" *ngIf="state.leaderboard.length; else noLeaderboard">
+              <div class="leader-card p-3" *ngFor="let player of state.leaderboard">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                  <div>
+                    <h3 class="h5 mb-1">{{ player.name }}</h3>
+                    <p class="text-secondary mb-1">
+                      Pool: {{ player.poolWins }} | Snooker: {{ player.snookerWins }}
+                    </p>
+                    <p class="small text-secondary mb-0">
+                      Derniere victoire: {{ player.lastWinAt | date: 'short' }}
+                    </p>
+                  </div>
+                  <span class="badge text-bg-success fs-6">{{ player.wins }} wins</span>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noLeaderboard>
+              <div class="empty-state p-4 text-center text-secondary">
+                Aucun resultat enregistre pour le moment.
+              </div>
+            </ng-template>
+          </div>
+        </div>
+
+        <div class="col-xl-7">
+          <div class="section-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <p class="text-uppercase text-secondary small fw-semibold mb-2">
+                  Historique
+                </p>
+                <h2 class="h4 mb-0">Dernieres sessions</h2>
+              </div>
+              <span class="badge text-bg-secondary">{{ state.historyTotal }}</span>
+            </div>
+
+            <div class="d-grid gap-3" *ngIf="state.history.length; else noHistory">
+              <div class="history-card p-3" *ngFor="let entry of state.history">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                  <div>
+                    <h3 class="h6 mb-1">{{ entry.tableName || 'Table archivee' }}</h3>
+                    <p class="text-secondary mb-0">
+                      {{ entry.playerOne }} vs {{ entry.playerTwo }}
+                    </p>
+                  </div>
+                  <span class="badge text-bg-dark">{{ entry.discipline }}</span>
+                </div>
+
+                <p class="mb-1">
+                  Vainqueur:
+                  <strong>{{ entry.winner || 'Non renseigne' }}</strong>
+                </p>
+                <p class="small text-secondary mb-1">
+                  Debut: {{ entry.startedAt | date: 'short' }} | Fin:
+                  {{ entry.endedAt | date: 'short' }}
+                </p>
+                <p class="small text-secondary mb-0">
+                  Duree:
+                  {{ entry.durationMinutes ? entry.durationMinutes + ' min' : 'Libre' }}
+                </p>
+
+                <p *ngIf="entry.note" class="history-note small mt-2 mb-0">
+                  {{ entry.note }}
+                </p>
+              </div>
+            </div>
+
+            <ng-template #noHistory>
+              <div class="empty-state p-4 text-center text-secondary">
+                L'historique sera visible ici apres les premiers matchs termines.
+              </div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="activeSection === 'accounts' && isSudo" class="row g-4">
+        <div class="col-xl-5">
+          <div class="section-card p-4 h-100">
+            <p class="text-uppercase text-secondary small fw-semibold mb-2">
+              Creation
+            </p>
+            <h2 class="h4 mb-4">Ajouter un compte admin</h2>
+
+            <form class="d-grid gap-3" (ngSubmit)="createAccount()" #accountCreateForm="ngForm">
+              <div>
+                <label for="display-name" class="form-label">Nom complet</label>
+                <input
+                  id="display-name"
+                  name="displayName"
+                  class="form-control"
+                  type="text"
+                  [(ngModel)]="accountForm.displayName"
+                  required
+                />
+              </div>
+
+              <div>
+                <label for="account-username" class="form-label">Identifiant</label>
+                <input
+                  id="account-username"
+                  name="accountUsername"
+                  class="form-control"
+                  type="text"
+                  [(ngModel)]="accountForm.username"
+                  required
+                />
+              </div>
+
+              <div>
+                <label for="account-password" class="form-label">Mot de passe</label>
+                <input
+                  id="account-password"
+                  name="accountPassword"
+                  class="form-control"
+                  type="password"
+                  [(ngModel)]="accountForm.password"
+                  required
+                />
+              </div>
+
+              <div>
+                <label for="account-role" class="form-label">Role</label>
+                <select
+                  id="account-role"
+                  name="accountRole"
+                  class="form-select"
+                  [(ngModel)]="accountForm.role"
+                  required
+                >
+                  <option value="admin">admin</option>
+                  <option value="sudo">sudo</option>
+                </select>
+              </div>
+
+              <button class="btn btn-danger" type="submit" [disabled]="accountCreateForm.invalid">
+                Creer le compte
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="col-xl-7">
+          <div class="section-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <p class="text-uppercase text-secondary small fw-semibold mb-2">
+                  Administration
+                </p>
+                <h2 class="h4 mb-0">Comptes disponibles</h2>
+              </div>
+              <span class="badge text-bg-dark">{{ accounts.length }}</span>
+            </div>
+
+            <div class="d-grid gap-3" *ngIf="accounts.length; else noAccounts">
+              <div class="account-card p-3" *ngFor="let account of accounts">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                  <div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                      <h3 class="h5 mb-0">{{ account.displayName }}</h3>
+                      <span class="badge text-bg-dark">{{ account.role }}</span>
+                      <span
+                        class="badge"
+                        [ngClass]="
+                          account.isActive ? 'text-bg-success' : 'text-bg-secondary'
+                        "
+                      >
+                        {{ account.isActive ? 'Actif' : 'Desactive' }}
+                      </span>
+                    </div>
+                    <p class="text-secondary mb-1">{{ account.username }}</p>
+                    <p class="small text-secondary mb-0">
+                      Cree le {{ account.createdAt | date: 'short' }}
+                    </p>
+                  </div>
+
+                  <div class="d-flex flex-column gap-2">
+                    <button
+                      class="btn btn-sm"
+                      type="button"
+                      [ngClass]="
+                        account.isActive ? 'btn-outline-warning' : 'btn-outline-success'
+                      "
+                      (click)="toggleAccountStatus(account)"
+                    >
+                      {{ account.isActive ? 'Desactiver' : 'Activer' }}
+                    </button>
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      type="button"
+                      (click)="deleteAccount(account)"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #noAccounts>
+              <div class="empty-state p-4 text-center text-secondary">
+                Aucun compte admin disponible.
+              </div>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

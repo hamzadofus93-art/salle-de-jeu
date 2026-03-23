@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountRole {
+  ADMIN
+  SUDO
+}
+
+enum TableStatus {
+  FREE
+  OCCUPIED
+}
+
+enum MatchStatus {
+  ACTIVE
+  FINISHED
+}
+
+model User {
+  id           String      @id @default(cuid())
+  username     String      @unique
+  passwordHash String
+  displayName  String
+  role         AccountRole @default(ADMIN)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model GameTable {
+  id              String            @id
+  name            String
+  discipline      String
+  shortDiscipline String
+  status          TableStatus       @default(FREE)
+  sessionsCompleted Int             @default(0)
+  lastWinnerName  String?
+  lastEndedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  matches         Match[]
+  waitingEntries  WaitingQueueEntry[]
+}
+
+model Match {
+  id              String      @id @default(cuid())
+  tableId         String
+  status          MatchStatus @default(ACTIVE)
+  discipline      String
+  format          String?
+  note            String?
+  playerOne       String
+  playerTwo       String
+  winnerName      String?
+  startedAt       DateTime    @default(now())
+  endedAt         DateTime?
+  durationMinutes Int?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  table           GameTable   @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@index([tableId, status])
+  @@index([status, endedAt])
+}
+
+model WaitingQueueEntry {
+  id         String    @id @default(cuid())
+  tableId     String
+  playerName String
+  position   Int
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  table      GameTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@unique([tableId, position])
+  @@index([tableId, createdAt])
+}

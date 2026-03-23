@@ -3,364 +3,141 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Phoenix Snooker Club | Gestion de Salle</title>
-    <link rel="stylesheet" href="./styles.css" />
-    <script src="./app.js" defer></script>
+    <title>Phoenix Snooker Club | Lancement</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", Arial, sans-serif;
+        color: #1f1f24;
+        background:
+          radial-gradient(circle at top left, rgba(220, 53, 69, 0.22), transparent 22%),
+          radial-gradient(circle at bottom right, rgba(13, 110, 253, 0.16), transparent 20%),
+          linear-gradient(145deg, #f8f4ef 0%, #efe8e1 100%);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      .launch-card {
+        width: min(760px, 100%);
+        padding: 32px;
+        border-radius: 28px;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 24px 60px rgba(15, 14, 18, 0.14);
+        border: 1px solid rgba(33, 37, 41, 0.08);
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #dc3545;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+        line-height: 1.05;
+      }
+
+      p {
+        margin: 0 0 14px;
+        font-size: 1rem;
+        line-height: 1.7;
+        color: #5b616c;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 24px 0;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 0 20px;
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      .button-primary {
+        background: #dc3545;
+        color: #fff;
+      }
+
+      .button-secondary {
+        border: 1px solid rgba(33, 37, 41, 0.12);
+        color: #1f1f24;
+        background: #fff;
+      }
+
+      .steps {
+        margin: 24px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 12px;
+      }
+
+      .step {
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: #f8f9fa;
+        border: 1px solid rgba(33, 37, 41, 0.08);
+      }
+
+      code {
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 0.95em;
+      }
+    </style>
   </head>
   <body>
-    <div class="app-shell">
-      <aside class="left-rail">
-        <div class="brand-panel">
-          <p class="eyebrow">Phoenix Snooker Club</p>
-          <div class="brand-lockup" aria-label="Phoenix Snooker Club">
-            <div class="brand-word">
-              PHOEN<span class="brand-i">I</span>X
-            </div>
-            <div class="brand-subline">
-              <div class="brand-balls" aria-hidden="true">
-                <span class="brand-ball yellow"></span>
-                <span class="brand-ball green"></span>
-                <span class="brand-ball brown"></span>
-                <span class="brand-ball blue"></span>
-                <span class="brand-ball pink"></span>
-                <span class="brand-ball black"></span>
-              </div>
-              <span class="brand-club">Snooker Club</span>
-            </div>
-            <div class="brand-stripes" aria-hidden="true">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
-          <p class="brand-text">
-            Une interface repensee autour du logo Phoenix pour piloter la salle,
-            garder le comptoir fluide et suivre les victoires sans perdre le rythme.
-          </p>
-        </div>
+    <main class="launch-card">
+      <p class="eyebrow">Phoenix Snooker Club</p>
+      <h1>Le dashboard principal est maintenant servi par Express + Angular.</h1>
+      <p>
+        Cette ancienne page statique n'est plus l'entree de l'application.
+        Pour charger le vrai dashboard, il faut lancer le serveur Node.js puis
+        ouvrir l'application sur le port <strong>3001</strong>.
+      </p>
 
-        <nav class="page-nav" aria-label="Navigation principale">
-          <a class="page-tab is-active" href="#home" data-page-tab="home">Accueil</a>
-          <a class="page-tab" href="#pool" data-page-tab="pool">Pool</a>
-          <a class="page-tab" href="#snooker" data-page-tab="snooker">Snooker</a>
-          <a class="page-tab" href="#lobby" data-page-tab="lobby">Lobby</a>
-          <a class="page-tab" href="#start" data-page-tab="start">Reservation</a>
-          <a class="page-tab" href="#finish" data-page-tab="finish">Cloture</a>
-          <a class="page-tab" href="#leaderboard" data-page-tab="leaderboard">Classement</a>
-          <a class="page-tab" href="#history" data-page-tab="history">Historique</a>
-        </nav>
-
-        <div class="rail-stack">
-          <section class="rail-card spotlight-card">
-            <p class="rail-label">Capacite en direct</p>
-            <div class="meter-block">
-              <div class="meter-track" aria-hidden="true">
-                <span id="occupancy-fill" class="meter-fill"></span>
-              </div>
-              <p id="occupancy-note" class="meter-note">
-                La salle est totalement disponible.
-              </p>
-            </div>
-          </section>
-
-          <section class="rail-card">
-            <p class="rail-label">Repere rapide</p>
-            <div class="mini-stat-list">
-              <article class="mini-stat">
-                <span>Tables libres</span>
-                <strong id="free-count">0</strong>
-              </article>
-              <article class="mini-stat">
-                <span>En cours</span>
-                <strong id="active-count">0</strong>
-              </article>
-              <article class="mini-stat">
-                <span>Archivees</span>
-                <strong id="archive-count">0</strong>
-              </article>
-            </div>
-          </section>
-
-          <section class="rail-card">
-            <p class="rail-label">Rituel rapide</p>
-            <ul class="guide-list">
-              <li>Selectionne une table libre pour enregistrer une reservation.</li>
-              <li>Cloture le match des qu'il se termine pour garder le classement juste.</li>
-              <li>Le journal recent garde les derniers resultats a portee de main.</li>
-            </ul>
-          </section>
-        </div>
-      </aside>
-
-      <div class="workspace">
-        <div id="page-deck" class="page-deck">
-          <section class="page-view is-active" data-page="home">
-            <header class="hero-card">
-              <div class="hero-copy">
-                <p class="eyebrow">Phoenix room control</p>
-                <h2>
-                  Une regie plus nette pour les tables, le lobby et les matchs du
-                  club.
-                </h2>
-                <p class="hero-text">
-                  Phoenix Snooker Club garde les 6 tables de pool anglais et les 3
-                  tables de snooker dans une seule interface, avec un contraste fort,
-                  des accents rouges et les couleurs des billes comme repere visuel.
-                </p>
-                <div class="hero-actions">
-                  <a class="primary-link" href="#start">Lancer une reservation</a>
-                  <a class="secondary-link" href="#leaderboard">Voir le classement</a>
-                </div>
-              </div>
-
-              <div class="hero-overview">
-                <div class="headline-metrics">
-                  <article class="headline-card">
-                    <span>Leader du club</span>
-                    <strong id="top-player">Aucun</strong>
-                  </article>
-                  <article class="headline-card accent">
-                    <span>Etat Phoenix</span>
-                    <strong id="room-summary">9 tables disponibles dans la salle.</strong>
-                  </article>
-                </div>
-
-                <section class="activity-card">
-                  <div class="section-heading compact">
-                    <div>
-                      <p class="section-kicker">Maintenant</p>
-                      <h2>Tables en jeu</h2>
-                    </div>
-                    <p class="section-note" id="activity-caption">
-                      Aucune reservation en cours.
-                    </p>
-                  </div>
-                  <div id="active-strip" class="active-strip"></div>
-                </section>
-              </div>
-            </header>
-          </section>
-
-          <section class="page-view" data-page="pool" hidden>
-            <section class="panel zone-page-panel">
-              <div class="section-heading">
-                <div>
-                  <p class="section-kicker">Arena 01</p>
-                  <h2>Pool</h2>
-                </div>
-                <div class="section-tags">
-                  <span class="legend-pill legend-free">Libre</span>
-                  <span class="legend-pill legend-busy">Occupee</span>
-                </div>
-              </div>
-              <p id="pool-summary" class="section-note">6 tables</p>
-              <div id="pool-grid" class="tables-grid"></div>
-            </section>
-          </section>
-
-          <section class="page-view" data-page="snooker" hidden>
-            <section class="panel zone-page-panel">
-              <div class="section-heading">
-                <div>
-                  <p class="section-kicker">Arena 02</p>
-                  <h2>Snooker</h2>
-                </div>
-                <div class="section-tags">
-                  <span class="legend-pill legend-free">Libre</span>
-                  <span class="legend-pill legend-busy">Occupee</span>
-                </div>
-              </div>
-              <p id="snooker-summary" class="section-note">3 tables</p>
-              <div id="snooker-grid" class="tables-grid"></div>
-            </section>
-          </section>
-
-          <section class="page-view" data-page="lobby" hidden>
-            <section class="panel zone-page-panel">
-              <div class="section-heading">
-                <div>
-                  <p class="section-kicker">Front desk</p>
-                  <h2>Lobby Phoenix</h2>
-                </div>
-                <p id="lobby-summary" class="section-note">0 en attente</p>
-              </div>
-              <div id="lobby-list" class="lobby-list"></div>
-            </section>
-          </section>
-
-          <section class="page-view" data-page="start" hidden>
-            <section class="panel action-panel">
-              <div class="section-heading">
-                <div>
-                  <p class="section-kicker">Reservation Phoenix</p>
-                  <h2>Nouvelle reservation</h2>
-                </div>
-              </div>
-              <p class="panel-intro">
-                Selectionne une table libre, choisis les joueurs, puis ajoute la
-                duree seulement pour le pool.
-              </p>
-
-              <form id="start-form" class="stack-form">
-                <label>
-                  Table
-                  <select id="start-table" name="table" required></select>
-                </label>
-
-                <div class="field-grid">
-                  <label>
-                    Joueur 1
-                    <select
-                      id="player-one"
-                      name="playerOne"
-                      required
-                    >
-                      <option value="">Choisir Joueur 1</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    Joueur 2
-                    <select
-                      id="player-two"
-                      name="playerTwo"
-                      required
-                    >
-                      <option value="">Choisir Joueur 2</option>
-                    </select>
-                  </label>
-                </div>
-
-                <div id="reservation-panel" class="reservation-panel" hidden>
-                  <div class="reservation-head">
-                    <div>
-                      <p id="reservation-kicker" class="waiting-kicker">
-                        Reservation
-                      </p>
-                      <p id="reservation-hint" class="form-hint">
-                        Renseigne les informations de reservation pour cette table.
-                      </p>
-                    </div>
-                  </div>
-
-                  <label id="pool-duration-field" class="reservation-detail" hidden>
-                    Duree de reservation
-                    <input
-                      id="pool-duration"
-                      name="poolDuration"
-                      type="number"
-                      min="15"
-                      step="15"
-                      inputmode="numeric"
-                      placeholder="60 min"
-                    />
-                  </label>
-                </div>
-
-                <label>
-                  Remarques
-                  <textarea
-                    id="start-note"
-                    name="note"
-                    rows="3"
-                    maxlength="120"
-                    placeholder="Optionnel"
-                  ></textarea>
-                </label>
-
-                <button id="start-submit" type="submit" class="primary-button">
-                  Reserver la table
-                </button>
-                <p class="form-hint">
-                  Les joueurs disponibles viennent du lobby, des tables actives et
-                  de l'historique.
-                </p>
-              </form>
-            </section>
-          </section>
-
-          <section class="page-view" data-page="finish" hidden>
-            <section class="panel action-panel">
-              <div class="section-heading">
-                <div>
-                  <p class="section-kicker">Cloture Phoenix</p>
-                  <h2>Enregistrer un vainqueur</h2>
-                </div>
-              </div>
-              <p class="panel-intro">
-                Termine une session active pour alimenter le classement et
-                l'historique recent.
-              </p>
-
-              <div id="finish-empty" class="empty-state small">
-                Aucune reservation en cours. Termine une table active pour enregistrer le
-                vainqueur.
-              </div>
-
-              <form id="finish-form" class="stack-form" hidden>
-                <label>
-                  Table active
-                  <select id="finish-table" name="finishTable" required></select>
-                </label>
-
-                <div id="active-match-summary" class="match-summary"></div>
-
-                <fieldset class="winner-fieldset">
-                  <legend>Vainqueur</legend>
-                  <div id="winner-options" class="winner-options"></div>
-                </fieldset>
-
-                <label>
-                  Commentaire final
-                  <textarea
-                    id="finish-note"
-                    name="finishNote"
-                    rows="3"
-                    maxlength="120"
-                    placeholder="Optionnel"
-                  ></textarea>
-                </label>
-
-                <button type="submit" class="primary-button">
-                  Enregistrer le vainqueur
-                </button>
-              </form>
-            </section>
-          </section>
-
-          <section class="page-view" data-page="leaderboard" hidden>
-            <section class="panel board-panel">
-              <div class="section-heading">
-                <div>
-                  <p class="section-kicker">Phoenix board</p>
-                  <h2>Classement des vainqueurs</h2>
-                </div>
-                <button id="reset-data" class="ghost-button" type="button">
-                  Reinitialiser
-                </button>
-              </div>
-              <div id="leaderboard" class="leaderboard"></div>
-            </section>
-          </section>
-
-          <section class="page-view" data-page="history" hidden>
-            <section class="panel history-panel">
-              <div class="section-heading">
-                <div>
-                  <p class="section-kicker">Journal Phoenix</p>
-                  <h2>Historique des matchs</h2>
-                </div>
-                <p class="section-note" id="history-caption">
-                  Les derniers matchs enregistres apparaitront ici.
-                </p>
-              </div>
-              <div id="history-list" class="history-list"></div>
-            </section>
-          </section>
-        </div>
+      <div class="actions">
+        <a class="button button-primary" href="http://localhost:3001/" target="_blank" rel="noopener">
+          Ouvrir l'application
+        </a>
+        <a class="button button-secondary" href="./start-app.cmd">
+          Lancer avec start-app.cmd
+        </a>
       </div>
-    </div>
 
-    <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+      <ul class="steps">
+        <li class="step">
+          1. Double-clique sur <code>start-app.cmd</code> a la racine du projet.
+        </li>
+        <li class="step">
+          2. Ou lance <code>cmd /c npm --prefix server run start:full</code>.
+        </li>
+        <li class="step">
+          3. Ensuite ouvre <code>http://localhost:3001</code>.
+        </li>
+      </ul>
+    </main>
   </body>
 </html>

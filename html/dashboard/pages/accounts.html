@@ -1,0 +1,99 @@
+<section class="page-view" data-page="accounts" hidden>
+  <section class="panel accounts-panel">
+    <div class="section-heading">
+      <div>
+        <p class="section-kicker">Phoenix sudo</p>
+        <h2>Gestion des comptes</h2>
+      </div>
+      <p id="accounts-caption" class="section-note">
+        Interface reservee aux utilisateurs sudo.
+      </p>
+    </div>
+
+    <div id="accounts-summary" class="accounts-summary-grid"></div>
+
+    <div class="accounts-layout">
+      <section class="accounts-create-panel">
+        <div class="section-heading compact">
+          <div>
+            <p class="section-kicker">Creation</p>
+            <h2>Nouveau compte</h2>
+          </div>
+        </div>
+
+        <form id="account-form" class="stack-form account-form">
+          <label>
+            Nom affiche
+            <input
+              id="account-display-name"
+              name="displayName"
+              type="text"
+              maxlength="40"
+              placeholder="Ex: Responsable salle"
+              required
+            />
+          </label>
+
+          <div class="field-grid">
+            <label>
+              Identifiant
+              <input
+                id="account-username"
+                name="username"
+                type="text"
+                maxlength="30"
+                autocomplete="off"
+                placeholder="Ex: resp.salle"
+                required
+              />
+            </label>
+
+            <label>
+              Role
+              <select id="account-role" name="role">
+                <option value="admin">Admin</option>
+                <option value="sudo">Sudo</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            Mot de passe
+            <input
+              id="account-password"
+              name="password"
+              type="password"
+              minlength="4"
+              maxlength="40"
+              placeholder="Minimum 4 caracteres"
+              required
+            />
+          </label>
+
+          <button id="account-submit" type="submit" class="primary-button">
+            Creer le compte
+          </button>
+
+          <p class="form-hint">
+            Les comptes admin ont acces au dashboard Phoenix. Seuls les
+            comptes sudo peuvent voir et utiliser cette page.
+          </p>
+        </form>
+      </section>
+
+      <section class="accounts-list-panel">
+        <div class="section-heading compact">
+          <div>
+            <p class="section-kicker">Gestion</p>
+            <h2>Comptes existants</h2>
+          </div>
+          <p id="accounts-access-note" class="section-note">
+            Activation, desactivation et suppression reservees au sudo connecte.
+          </p>
+        </div>
+
+        <div id="accounts-list" class="accounts-list"></div>
+      </section>
+    </div>
+  </section>
+</section>

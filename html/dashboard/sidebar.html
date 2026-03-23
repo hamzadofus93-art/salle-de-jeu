@@ -1,0 +1,94 @@
+<aside class="left-rail">
+  <div class="brand-panel">
+    <p class="eyebrow">Phoenix Snooker Club</p>
+    <div class="brand-lockup" aria-label="Phoenix Snooker Club">
+      <div class="brand-word">
+        PHOEN<span class="brand-i">I</span>X
+      </div>
+      <div class="brand-subline">
+        <div class="brand-balls" aria-hidden="true">
+          <span class="brand-ball yellow"></span>
+          <span class="brand-ball green"></span>
+          <span class="brand-ball brown"></span>
+          <span class="brand-ball blue"></span>
+          <span class="brand-ball pink"></span>
+          <span class="brand-ball black"></span>
+        </div>
+        <span class="brand-club">Snooker Club</span>
+      </div>
+      <div class="brand-stripes" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+    <p class="brand-text">
+      Une interface repensee autour du logo Phoenix pour piloter la salle,
+      garder le comptoir fluide et suivre les victoires sans perdre le rythme.
+    </p>
+  </div>
+
+  <section class="session-card" aria-label="Session active">
+    <div class="session-copy">
+      <p class="rail-label">Session active</p>
+      <strong id="session-user">Admin Phoenix</strong>
+      <p id="session-meta" class="session-meta">Role: Admin | Acces au dashboard Phoenix</p>
+    </div>
+    <button id="logout-button" class="ghost-button logout-button" type="button">
+      Deconnexion
+    </button>
+  </section>
+
+  <nav class="page-nav" aria-label="Navigation principale">
+    <a class="page-tab is-active" href="#home" data-page-tab="home">Accueil</a>
+    <a class="page-tab" href="#pool" data-page-tab="pool">Pool</a>
+    <a class="page-tab" href="#snooker" data-page-tab="snooker">Snooker</a>
+    <a class="page-tab" href="#lobby" data-page-tab="lobby">Lobby</a>
+    <a class="page-tab" href="#start" data-page-tab="start">Reservation</a>
+    <a class="page-tab" href="#finish" data-page-tab="finish">Cloture</a>
+    <a class="page-tab" href="#leaderboard" data-page-tab="leaderboard">Classement</a>
+    <a class="page-tab" href="#history" data-page-tab="history">Historique</a>
+    <a class="page-tab" href="#accounts" data-page-tab="accounts" hidden>Comptes</a>
+  </nav>
+
+  <div class="rail-stack">
+    <section class="rail-card spotlight-card">
+      <p class="rail-label">Capacite en direct</p>
+      <div class="meter-block">
+        <div class="meter-track" aria-hidden="true">
+          <span id="occupancy-fill" class="meter-fill"></span>
+        </div>
+        <p id="occupancy-note" class="meter-note">
+          La salle est totalement disponible.
+        </p>
+      </div>
+    </section>
+
+    <section class="rail-card">
+      <p class="rail-label">Repere rapide</p>
+      <div class="mini-stat-list">
+        <article class="mini-stat">
+          <span>Tables libres</span>
+          <strong id="free-count">0</strong>
+        </article>
+        <article class="mini-stat">
+          <span>En cours</span>
+          <strong id="active-count">0</strong>
+        </article>
+        <article class="mini-stat">
+          <span>Archivees</span>
+          <strong id="archive-count">0</strong>
+        </article>
+      </div>
+    </section>
+
+    <section class="rail-card">
+      <p class="rail-label">Rituel rapide</p>
+      <ul class="guide-list">
+        <li>Selectionne une table libre pour enregistrer une reservation.</li>
+        <li>Cloture le match des qu'il se termine pour garder le classement juste.</li>
+        <li>Le journal recent garde les derniers resultats a portee de main.</li>
+      </ul>
+    </section>
+  </div>
+</aside>

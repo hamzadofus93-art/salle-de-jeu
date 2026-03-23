@@ -1,0 +1,11 @@
+{
+  "name": "phoenix-snooker-workspace",
+  "private": true,
+  "scripts": {
+    "start": "restart-app.cmd",
+    "dev": "npm --prefix server run dev",
+    "client:dev": "npm --prefix client start",
+    "build": "npm --prefix client run build",
+    "restart": "restart-app.cmd"
+  }
+}

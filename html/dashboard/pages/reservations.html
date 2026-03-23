@@ -1,0 +1,139 @@
+<section class="page-view" data-page="start" hidden>
+  <section class="panel action-panel">
+    <div class="section-heading">
+      <div>
+        <p class="section-kicker">Reservation Phoenix</p>
+        <h2>Nouvelle reservation</h2>
+      </div>
+    </div>
+    <p class="panel-intro">
+      Selectionne une table libre, choisis les joueurs, puis ajoute la
+      duree seulement pour le pool.
+    </p>
+
+    <form id="start-form" class="stack-form">
+      <label>
+        Table
+        <select id="start-table" name="table" required></select>
+      </label>
+
+      <div class="field-grid">
+        <label>
+          Joueur 1
+          <select
+            id="player-one"
+            name="playerOne"
+            required
+          >
+            <option value="">Choisir Joueur 1</option>
+          </select>
+        </label>
+
+        <label>
+          Joueur 2
+          <select
+            id="player-two"
+            name="playerTwo"
+            required
+          >
+            <option value="">Choisir Joueur 2</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="reservation-panel" class="reservation-panel" hidden>
+        <div class="reservation-head">
+          <div>
+            <p id="reservation-kicker" class="waiting-kicker">
+              Reservation
+            </p>
+            <p id="reservation-hint" class="form-hint">
+              Renseigne les informations de reservation pour cette table.
+            </p>
+          </div>
+        </div>
+
+        <label id="pool-duration-field" class="reservation-detail" hidden>
+          Duree de reservation
+          <input
+            id="pool-duration"
+            name="poolDuration"
+            type="number"
+            min="15"
+            step="15"
+            inputmode="numeric"
+            placeholder="60 min"
+          />
+        </label>
+      </div>
+
+      <label>
+        Remarques
+        <textarea
+          id="start-note"
+          name="note"
+          rows="3"
+          maxlength="120"
+          placeholder="Optionnel"
+        ></textarea>
+      </label>
+
+      <button id="start-submit" type="submit" class="primary-button">
+        Reserver la table
+      </button>
+      <p class="form-hint">
+        Les joueurs disponibles viennent du lobby, des tables actives et
+        de l'historique.
+      </p>
+    </form>
+  </section>
+</section>
+
+<section class="page-view" data-page="finish" hidden>
+  <section class="panel action-panel">
+    <div class="section-heading">
+      <div>
+        <p class="section-kicker">Cloture Phoenix</p>
+        <h2>Enregistrer un vainqueur</h2>
+      </div>
+    </div>
+    <p class="panel-intro">
+      Termine une session active pour alimenter le classement et
+      l'historique recent.
+    </p>
+
+    <div id="finish-empty" class="empty-state small">
+      Aucune reservation en cours. Termine une table active pour enregistrer le
+      vainqueur.
+    </div>
+
+    <form id="finish-form" class="stack-form" hidden>
+      <label>
+        Table active
+        <select id="finish-table" name="finishTable" required></select>
+      </label>
+
+      <div id="active-match-summary" class="match-summary"></div>
+
+      <fieldset class="winner-fieldset">
+        <legend>Vainqueur</legend>
+        <div id="winner-options" class="winner-options"></div>
+      </fieldset>
+
+      <label>
+        Commentaire final
+        <textarea
+          id="finish-note"
+          name="finishNote"
+          rows="3"
+          maxlength="120"
+          placeholder="Optionnel"
+        ></textarea>
+      </label>
+
+      <button type="submit" class="primary-button">
+        Enregistrer le vainqueur
+      </button>
+    </form>
+  </section>
+</section>

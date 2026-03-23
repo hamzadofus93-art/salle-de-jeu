@@ -1,0 +1,98 @@
+<div class="login-shell">
+  <div class="container py-5">
+    <div class="row justify-content-center align-items-center min-vh-100 g-4">
+      <div class="col-lg-6 col-xl-5">
+        <div class="brand-panel p-4 p-lg-5">
+          <div class="phoenix-lockup brand-mark" aria-label="Phoenix Snooker Club">
+            <div class="phoenix-word">
+              PHOEN<span class="phoenix-i">I</span>X
+            </div>
+            <div class="phoenix-subline">
+              <div class="phoenix-balls" aria-hidden="true">
+                <span class="phoenix-ball yellow"></span>
+                <span class="phoenix-ball green"></span>
+                <span class="phoenix-ball brown"></span>
+                <span class="phoenix-ball blue"></span>
+                <span class="phoenix-ball pink"></span>
+                <span class="phoenix-ball black"></span>
+              </div>
+              <span class="phoenix-club">Snooker Club</span>
+            </div>
+          </div>
+
+          <p class="text-uppercase small fw-semibold brand-kicker mb-2">
+            Interface administration
+          </p>
+          <h1 class="display-5 fw-bold brand-title mb-3">Connexion au dashboard</h1>
+            <p class="lead brand-copy mb-0">
+              Pilote la salle Phoenix, orchestre les reservations, garde le
+              lobby fluide et transforme chaque match en victoire bien tracee.
+            </p>
+
+          <div class="phoenix-stripes brand-stripes" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5 col-xl-4">
+        <div class="card shadow-lg border-0 login-card">
+          <div class="card-body p-4 p-lg-5">
+            <div class="mb-4">
+              <p class="text-uppercase small fw-semibold text-danger mb-2">
+                Acces securise
+              </p>
+              <h2 class="h3 mb-0">Se connecter</h2>
+            </div>
+
+            <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+              {{ errorMessage }}
+            </div>
+
+            <form (ngSubmit)="submit()" #loginForm="ngForm" class="d-grid gap-3">
+              <div>
+                <label for="username" class="form-label">Identifiant</label>
+                <input
+                  id="username"
+                  name="username"
+                  class="form-control form-control-lg"
+                  type="text"
+                  autocomplete="username"
+                  [(ngModel)]="credentials.username"
+                  required
+                />
+              </div>
+
+              <div>
+                <label for="password" class="form-label">Mot de passe</label>
+                <input
+                  id="password"
+                  name="password"
+                  class="form-control form-control-lg"
+                  type="password"
+                  autocomplete="current-password"
+                  [(ngModel)]="credentials.password"
+                  required
+                />
+              </div>
+
+              <button
+                class="btn btn-danger btn-lg w-100"
+                type="submit"
+                [disabled]="isSubmitting || loginForm.invalid"
+              >
+                <span
+                  *ngIf="isSubmitting"
+                  class="spinner-border spinner-border-sm me-2"
+                ></span>
+                Ouvrir le dashboard
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
