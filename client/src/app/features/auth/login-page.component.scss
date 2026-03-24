@@ -11,6 +11,16 @@
     linear-gradient(145deg, #fffdfb 0%, #f4ede4 100%);
 }
 
+.login-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-layout > .row {
+  flex: 1 1 auto;
+}
+
 .brand-panel {
   position: relative;
   border-radius: 2.2rem;
