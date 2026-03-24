@@ -120,6 +120,26 @@ export class DashboardPageComponent implements OnInit {
     return this.freeTables.find((table) => table.id === this.startForm.tableId) ?? null;
   }
 
+  protected get selectedStartWaitingPlayers(): WaitingPlayerEntry[] {
+    return this.selectedStartTable?.waitingPlayers ?? [];
+  }
+
+  protected get startPlayerOneOptions(): WaitingPlayerEntry[] {
+    return this.selectedStartWaitingPlayers.filter(
+      (entry) => !this.namesMatch(entry.playerName, this.startForm.playerTwo),
+    );
+  }
+
+  protected get startPlayerTwoOptions(): WaitingPlayerEntry[] {
+    return this.selectedStartWaitingPlayers.filter(
+      (entry) => !this.namesMatch(entry.playerName, this.startForm.playerOne),
+    );
+  }
+
+  protected get hasEnoughWaitingPlayersForStart(): boolean {
+    return this.selectedStartWaitingPlayers.length >= 2;
+  }
+
   protected get selectedFinishTable(): DashboardTable | null {
     return (
       this.activeTables.find(
@@ -179,9 +199,38 @@ export class DashboardPageComponent implements OnInit {
 
   protected async startMatch(): Promise<void> {
     const table = this.selectedStartTable;
+    const waitingPlayerNames = this.selectedStartWaitingPlayers.map(
+      (entry) => entry.playerName,
+    );
 
     if (!table) {
       this.errorMessage = 'Selectionne une table libre.';
+      return;
+    }
+
+    if (waitingPlayerNames.length < 2) {
+      this.errorMessage =
+        "Ajoute au moins deux joueurs dans la file d'attente de cette table.";
+      return;
+    }
+
+    const playerOne = this.findMatchingQueuedPlayer(
+      waitingPlayerNames,
+      this.startForm.playerOne,
+    );
+    const playerTwo = this.findMatchingQueuedPlayer(
+      waitingPlayerNames,
+      this.startForm.playerTwo,
+    );
+
+    if (!playerOne || !playerTwo) {
+      this.errorMessage =
+        "Choisis deux joueurs depuis la file d'attente de la table selectionnee.";
+      return;
+    }
+
+    if (this.namesMatch(playerOne, playerTwo)) {
+      this.errorMessage = 'Merci de selectionner deux joueurs differents.';
       return;
     }
 
@@ -189,8 +238,8 @@ export class DashboardPageComponent implements OnInit {
       await firstValueFrom(
         this.dashboardApi.startMatch({
           tableId: this.startForm.tableId,
-          playerOne: this.startForm.playerOne,
-          playerTwo: this.startForm.playerTwo,
+          playerOne,
+          playerTwo,
           durationMinutes:
             table.discipline === 'Pool anglais'
               ? this.startForm.durationMinutes
@@ -281,6 +330,24 @@ export class DashboardPageComponent implements OnInit {
     });
   }
 
+  protected handleStartTableChange(): void {
+    if (!this.selectedStartTable || this.selectedStartTable.discipline !== 'Pool anglais') {
+      this.startForm.durationMinutes = 60;
+    }
+
+    this.syncStartPlayerSelections();
+    this.render();
+  }
+
+  protected handleStartPlayerSelectionChange(
+    playerField: 'playerOne' | 'playerTwo',
+  ): void {
+    this.syncStartPlayerSelections({
+      [playerField]: this.startForm[playerField],
+    });
+    this.render();
+  }
+
   private async loadDashboard(isRefresh = false): Promise<void> {
     this.clearAlerts();
     this.isLoading = !isRefresh;
@@ -367,6 +434,8 @@ export class DashboardPageComponent implements OnInit {
       this.startForm.durationMinutes = 60;
     }
 
+    this.syncStartPlayerSelections();
+
     const nextActiveMatchId = this.activeTables[0]?.currentMatch?.id ?? '';
 
     if (
@@ -390,6 +459,54 @@ export class DashboardPageComponent implements OnInit {
     ) {
       this.finishForm.winner = selectedMatch.playerOne;
     }
+  }
+
+  private syncStartPlayerSelections(
+    preferredSelection: Partial<Pick<typeof this.startForm, 'playerOne' | 'playerTwo'>> = {},
+  ): void {
+    const queuedPlayers = this.selectedStartWaitingPlayers.map(
+      (entry) => entry.playerName,
+    );
+
+    if (!queuedPlayers.length) {
+      this.startForm.playerOne = '';
+      this.startForm.playerTwo = '';
+      return;
+    }
+
+    const nextPlayerOne =
+      this.findMatchingQueuedPlayer(
+        queuedPlayers,
+        preferredSelection.playerOne ?? this.startForm.playerOne,
+      ) || queuedPlayers[0] || '';
+
+    const remainingPlayers = queuedPlayers.filter(
+      (playerName) => !this.namesMatch(playerName, nextPlayerOne),
+    );
+
+    const nextPlayerTwo =
+      this.findMatchingQueuedPlayer(
+        remainingPlayers,
+        preferredSelection.playerTwo ?? this.startForm.playerTwo,
+      ) || remainingPlayers[0] || '';
+
+    this.startForm.playerOne = nextPlayerOne;
+    this.startForm.playerTwo = nextPlayerTwo;
+  }
+
+  private findMatchingQueuedPlayer(players: string[], candidate: string): string {
+    return players.find((playerName) => this.namesMatch(playerName, candidate)) ?? '';
+  }
+
+  private namesMatch(left: string, right: string): boolean {
+    return this.normalizePlayerName(left) === this.normalizePlayerName(right);
+  }
+
+  private normalizePlayerName(value: string): string {
+    return String(value || '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
   }
 
   private async runAction(action: () => Promise<void>): Promise<void> {

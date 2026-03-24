@@ -21,9 +21,9 @@
           </p>
           <h1 class="display-5 fw-bold text-dark mb-3">Dashboard temps reel</h1>
           <p class="lead mb-0">
-            Angular pilote maintenant les reservations, les tables, les matchs et
-            la gestion des comptes avec une interface inspiree directement du
-            logo Phoenix.
+            Pilote les reservations, les tables, les matchs et les comptes
+            depuis une interface Phoenix plus elegante, plus precise et
+            pensee pour une gestion haut de gamme du club.
           </p>
         </div>
 
@@ -481,6 +481,7 @@
                   name="startTable"
                   class="form-select"
                   [(ngModel)]="startForm.tableId"
+                  (ngModelChange)="handleStartTableChange()"
                   required
                 >
                   <option value="" disabled>Choisir une table</option>
@@ -493,27 +494,61 @@
               <div class="row g-3">
                 <div class="col-md-6">
                   <label for="player-one" class="form-label">Joueur 1</label>
-                  <input
+                  <select
                     id="player-one"
                     name="playerOne"
-                    class="form-control"
-                    type="text"
+                    class="form-select"
                     [(ngModel)]="startForm.playerOne"
+                    (ngModelChange)="handleStartPlayerSelectionChange('playerOne')"
+                    [disabled]="!selectedStartWaitingPlayers.length"
                     required
-                  />
+                  >
+                    <option value="" disabled>Choisir un joueur</option>
+                    <option
+                      *ngFor="let entry of startPlayerOneOptions"
+                      [value]="entry.playerName"
+                    >
+                      #{{ entry.position }} - {{ entry.playerName }}
+                    </option>
+                  </select>
                 </div>
 
                 <div class="col-md-6">
                   <label for="player-two" class="form-label">Joueur 2</label>
-                  <input
+                  <select
                     id="player-two"
                     name="playerTwo"
-                    class="form-control"
-                    type="text"
+                    class="form-select"
                     [(ngModel)]="startForm.playerTwo"
+                    (ngModelChange)="handleStartPlayerSelectionChange('playerTwo')"
+                    [disabled]="selectedStartWaitingPlayers.length < 2"
                     required
-                  />
+                  >
+                    <option value="" disabled>Choisir un joueur</option>
+                    <option
+                      *ngFor="let entry of startPlayerTwoOptions"
+                      [value]="entry.playerName"
+                    >
+                      #{{ entry.position }} - {{ entry.playerName }}
+                    </option>
+                  </select>
                 </div>
+              </div>
+
+              <div
+                *ngIf="selectedStartTable && !selectedStartWaitingPlayers.length"
+                class="small text-secondary"
+              >
+                Aucun joueur n'est en attente sur cette table. Ajoute d'abord des
+                joueurs depuis l'onglet Tables.
+              </div>
+
+              <div
+                *ngIf="selectedStartTable && selectedStartWaitingPlayers.length === 1"
+                class="small text-secondary"
+              >
+                Un seul joueur est en attente sur cette table. Ajoute un deuxieme
+                joueur pour demarrer le match.
               </div>
 
               <div *ngIf="selectedStartTable?.discipline === 'Pool anglais'">
@@ -544,7 +579,9 @@
               <button
                 class="btn btn-danger"
                 type="submit"
-                [disabled]="startMatchForm.invalid || !freeTables.length"
+                [disabled]="
+                  startMatchForm.invalid || !freeTables.length || !hasEnoughWaitingPlayersForStart
+                "
               >
                 Demarrer le match
               </button>
