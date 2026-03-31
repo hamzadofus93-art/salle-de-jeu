@@ -5,7 +5,10 @@ import {
   AccountsResponse,
   DashboardResponse,
   MatchActionResponse,
+  ReservationResponse,
+  ReservationsResponse,
   TableResponse,
+  TablesResponse,
 } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -18,6 +21,14 @@ export class DashboardApiService {
 
   getAccounts() {
     return this.http.get<AccountsResponse>(`${API_BASE_URL}/accounts`);
+  }
+
+  getTables() {
+    return this.http.get<TablesResponse>(`${API_BASE_URL}/tables`);
+  }
+
+  getReservations() {
+    return this.http.get<ReservationsResponse>(`${API_BASE_URL}/reservations`);
   }
 
   createAccount(payload: {
@@ -41,6 +52,39 @@ export class DashboardApiService {
 
   deleteAccount(accountId: string) {
     return this.http.delete<void>(`${API_BASE_URL}/accounts/${accountId}`);
+  }
+
+  createReservation(payload: {
+    tableId: string;
+    startAt: string;
+    durationMinutes: number;
+    note?: string;
+  }) {
+    return this.http.post<ReservationResponse>(
+      `${API_BASE_URL}/reservations`,
+      payload,
+    );
+  }
+
+  updateReservation(
+    reservationId: string,
+    payload: {
+      tableId: string;
+      startAt: string;
+      durationMinutes: number;
+      note?: string;
+    },
+  ) {
+    return this.http.patch<ReservationResponse>(
+      `${API_BASE_URL}/reservations/${reservationId}`,
+      payload,
+    );
+  }
+
+  cancelReservation(reservationId: string) {
+    return this.http.delete<ReservationResponse>(
+      `${API_BASE_URL}/reservations/${reservationId}`,
+    );
   }
 
   addWaitingPlayer(tableId: string, playerName: string) {

@@ -1,0 +1,258 @@
+<div class="reservation-shell">
+  <header class="reservation-topbar">
+    <div>
+      <p class="eyebrow mb-2">Phoenix Snooker Club</p>
+      <h1 class="mb-2">Mes reservations</h1>
+      <p class="reservation-copy mb-0">
+        Reserve une table puis consulte les prochains creneaux deja poses dans le club.
+      </p>
+    </div>
+
+    <div class="reservation-topbar-side">
+      <div class="reservation-user-box">
+        <div>
+          <strong>{{ user?.displayName }}</strong>
+          <small>@{{ user?.username }}</small>
+        </div>
+        <span class="reservation-user-badge">Compte utilisateur</span>
+      </div>
+
+      <div class="reservation-actions">
+        <button
+          class="btn btn-outline-dark"
+          type="button"
+          (click)="refresh()"
+          [disabled]="isRefreshing || isSubmitting"
+        >
+          <span
+            *ngIf="isRefreshing"
+            class="spinner-border spinner-border-sm me-2"
+          ></span>
+          Rafraichir
+        </button>
+
+        <button class="btn btn-danger" type="button" (click)="logout()">
+          Deconnexion
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div *ngIf="errorMessage" class="alert alert-danger" role="alert" aria-live="polite">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success" role="status" aria-live="polite">
+    {{ successMessage }}
+  </div>
+
+  <div *ngIf="isLoading" class="reservation-panel reservation-panel-loading">
+    <div class="spinner-border text-danger mb-3" role="status"></div>
+    <p class="mb-0">Chargement des reservations...</p>
+  </div>
+
+  <ng-container *ngIf="!isLoading">
+    <section class="reservation-summary-grid">
+      <article class="reservation-summary-card">
+        <span>Reservations a venir</span>
+        <strong>{{ reservations.length }}</strong>
+      </article>
+
+      <article class="reservation-summary-card">
+        <span>Mes reservations</span>
+        <strong>{{ myReservations.length }}</strong>
+      </article>
+
+      <article class="reservation-summary-card">
+        <span>Tables disponibles</span>
+        <strong>{{ availableTables.length }}</strong>
+      </article>
+    </section>
+
+    <section class="reservation-grid">
+      <article class="reservation-panel">
+        <div class="reservation-panel-head">
+          <div>
+            <p class="eyebrow mb-2">Nouveau creneau</p>
+            <h2 class="mb-1">{{ reservationActionTitle }}</h2>
+            <p class="reservation-copy mb-0">
+              Choisis la table, l'horaire et la duree. Le systeme bloque les conflits de creneaux.
+            </p>
+          </div>
+        </div>
+
+        <div *ngIf="editingReservation" class="reservation-edit-banner">
+          <strong>Modification en cours</strong>
+          <span>
+            {{ editingReservation.tableName || 'Table' }} le
+            {{ editingReservation.startAt | date: 'short' }}
+          </span>
+        </div>
+
+        <form class="reservation-form" (ngSubmit)="submitReservation()" #reservationFormRef="ngForm">
+          <div>
+            <label class="form-label" for="reservation-table">Table</label>
+            <select
+              id="reservation-table"
+              name="tableId"
+              class="form-select"
+              [(ngModel)]="reservationForm.tableId"
+              required
+            >
+              <option value="" disabled>
+                {{ selectableTables.length ? 'Choisir une table' : 'Aucune table reservable' }}
+              </option>
+              <option *ngFor="let table of selectableTables" [value]="table.id">
+                {{ table.name }} - {{ table.discipline }}
+              </option>
+            </select>
+            <small class="reservation-form-hint">
+              Une seule reservation visible par table et par utilisateur.
+            </small>
+          </div>
+
+          <div>
+            <label class="form-label" for="reservation-start-at">Date et heure</label>
+            <input
+              id="reservation-start-at"
+              name="startAt"
+              class="form-control"
+              type="datetime-local"
+              [min]="minReservationStartAt"
+              [(ngModel)]="reservationForm.startAt"
+              required
+            />
+          </div>
+
+          <div>
+            <label class="form-label" for="reservation-duration">Duree (minutes)</label>
+            <input
+              id="reservation-duration"
+              name="durationMinutes"
+              class="form-control"
+              type="number"
+              min="30"
+              max="240"
+              step="15"
+              [(ngModel)]="reservationForm.durationMinutes"
+              required
+            />
+          </div>
+
+          <div *ngIf="selectedTable" class="reservation-hint-card">
+            <strong>{{ selectedTable.name }}</strong>
+            <span>{{ selectedTable.discipline }}</span>
+            <small>
+              Etat actuel : {{ selectedTable.status === 'occupied' ? 'occupee' : 'libre' }}
+            </small>
+          </div>
+
+          <div *ngIf="!availableTables.length" class="reservation-empty reservation-empty-compact">
+            Tu as deja une reservation visible sur chaque table disponible.
+            Annule une reservation ou attends qu'elle disparaisse de la liste pour en refaire une.
+          </div>
+
+          <div>
+            <label class="form-label" for="reservation-note">Remarque</label>
+            <textarea
+              id="reservation-note"
+              name="note"
+              class="form-control"
+              rows="3"
+              maxlength="120"
+              placeholder="Optionnel"
+              [(ngModel)]="reservationForm.note"
+            ></textarea>
+          </div>
+
+          <button
+            class="btn btn-danger btn-lg"
+            type="submit"
+            [disabled]="reservationFormRef.invalid || !canCreateReservation"
+          >
+            <span
+              *ngIf="isSubmitting"
+              class="spinner-border spinner-border-sm me-2"
+            ></span>
+            {{ reservationSubmitLabel }}
+          </button>
+
+          <button
+            *ngIf="editingReservation"
+            class="btn btn-outline-dark"
+            type="button"
+            (click)="exitEditMode()"
+            [disabled]="isSubmitting"
+          >
+            Annuler la modification
+          </button>
+        </form>
+      </article>
+
+      <article class="reservation-panel">
+        <div class="reservation-panel-head">
+          <div>
+            <p class="eyebrow mb-2">Liste du club</p>
+            <h2 class="mb-1">Reservations a venir</h2>
+            <p class="reservation-copy mb-0">
+              Toutes les reservations visibles par les utilisateurs connectes.
+            </p>
+          </div>
+        </div>
+
+        <div *ngIf="reservations.length; else emptyReservations" class="reservation-list">
+          <article *ngFor="let reservation of reservations" class="reservation-item">
+            <div class="reservation-item-head">
+              <div>
+                <strong>{{ reservation.tableName || 'Table inconnue' }}</strong>
+                <span>{{ reservation.discipline || 'Discipline inconnue' }}</span>
+              </div>
+
+              <span
+                class="reservation-owner-badge"
+                [class.reservation-owner-badge-mine]="isMine(reservation)"
+              >
+                {{ isMine(reservation) ? 'Ma reservation' : reservation.createdBy?.displayName || 'Reservation club' }}
+              </span>
+            </div>
+
+            <div class="reservation-meta">
+              <span>Debut : {{ reservation.startAt | date: 'fullDate' }} a {{ reservation.startAt | date: 'shortTime' }}</span>
+              <span>Fin : {{ reservation.endAt | date: 'shortTime' }}</span>
+              <span>Duree : {{ reservation.durationMinutes }} min</span>
+            </div>
+
+            <p *ngIf="reservation.note" class="reservation-note mb-0">
+              {{ reservation.note }}
+            </p>
+
+            <div *ngIf="isMine(reservation)" class="reservation-item-actions">
+              <button
+                class="btn btn-sm btn-outline-dark"
+                type="button"
+                (click)="startEditReservation(reservation)"
+                [disabled]="isSubmitting"
+              >
+                Modifier
+              </button>
+              <button
+                class="btn btn-sm btn-outline-danger"
+                type="button"
+                (click)="cancelReservation(reservation)"
+                [disabled]="isSubmitting"
+              >
+                Annuler ma reservation
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <ng-template #emptyReservations>
+          <div class="reservation-empty">
+            Aucune reservation a venir pour le moment.
+          </div>
+        </ng-template>
+      </article>
+    </section>
+  </ng-container>
+</div>

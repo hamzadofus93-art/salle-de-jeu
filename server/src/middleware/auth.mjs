@@ -35,3 +35,12 @@ export function requireSudo(request, _response, next) {
 
   next();
 }
+
+export function requireStaff(request, _response, next) {
+  if (!request.user || !["ADMIN", "SUDO"].includes(request.user.role)) {
+    next(forbidden("Action reservee a l'equipe Phoenix."));
+    return;
+  }
+
+  next();
+}

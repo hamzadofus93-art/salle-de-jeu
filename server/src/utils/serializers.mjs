@@ -56,3 +56,20 @@ export function toPublicMatch(match) {
     status: match.status.toLowerCase(),
   };
 }
+
+export function toPublicReservation(reservation) {
+  return {
+    id: reservation.id,
+    tableId: reservation.tableId,
+    tableName: reservation.table?.name || null,
+    discipline: reservation.table?.discipline || null,
+    startAt: reservation.startAt,
+    endAt: reservation.endAt,
+    durationMinutes: reservation.durationMinutes,
+    note: reservation.note,
+    status: reservation.status.toLowerCase(),
+    createdAt: reservation.createdAt,
+    updatedAt: reservation.updatedAt,
+    createdBy: reservation.user ? toPublicUser(reservation.user) : null,
+  };
+}

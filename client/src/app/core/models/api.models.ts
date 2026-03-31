@@ -1,6 +1,7 @@
-export type UserRole = 'admin' | 'sudo';
+export type UserRole = 'admin' | 'sudo' | 'user';
 export type TableStatus = 'free' | 'occupied';
 export type MatchStatus = 'active' | 'finished';
+export type ReservationStatus = 'upcoming' | 'canceled';
 
 export interface UserAccount {
   id: string;
@@ -100,4 +101,27 @@ export interface TablesResponse {
 export interface MatchActionResponse {
   match: MatchRecord;
   table: DashboardTable;
+}
+
+export interface ReservationRecord {
+  id: string;
+  tableId: string;
+  tableName: string | null;
+  discipline: string | null;
+  startAt: string;
+  endAt: string;
+  durationMinutes: number;
+  note: string | null;
+  status: ReservationStatus;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: UserAccount | null;
+}
+
+export interface ReservationResponse {
+  reservation: ReservationRecord;
+}
+
+export interface ReservationsResponse {
+  reservations: ReservationRecord[];
 }

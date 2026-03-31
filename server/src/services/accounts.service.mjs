@@ -6,13 +6,20 @@ import { toPublicUser } from "../utils/serializers.mjs";
 
 export async function listAccounts() {
   const users = await prisma.user.findMany({
-    orderBy: [
-      { role: "desc" },
-      { createdAt: "asc" },
-    ],
+    orderBy: { createdAt: "asc" },
   });
 
-  return users.map(toPublicUser);
+  return users
+    .sort((left, right) => {
+      const roleDifference = getRolePriority(left.role) - getRolePriority(right.role);
+
+      if (roleDifference !== 0) {
+        return roleDifference;
+      }
+
+      return new Date(left.createdAt) - new Date(right.createdAt);
+    })
+    .map(toPublicUser);
 }
 
 export async function createAccount(actor, payload) {
@@ -131,11 +138,33 @@ export async function deleteAccount(actor, accountId) {
 }
 
 function normalizeRole(value) {
-  return String(value || "").toLowerCase() === "sudo" ? "SUDO" : "ADMIN";
+  const normalizedValue = String(value || "").toLowerCase();
+
+  if (normalizedValue === "sudo") {
+    return "SUDO";
+  }
+
+  if (normalizedValue === "user") {
+    return "USER";
+  }
+
+  return "ADMIN";
 }
 
 function assertSudo(actor) {
   if (!actor || actor.role !== "SUDO") {
     throw forbidden("Action reservee aux comptes sudo.");
   }
+}
+
+function getRolePriority(role) {
+  if (role === "SUDO") {
+    return 0;
+  }
+
+  if (role === "ADMIN") {
+    return 1;
+  }
+
+  return 2;
 }

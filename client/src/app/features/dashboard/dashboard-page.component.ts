@@ -14,6 +14,7 @@ import {
 } from '../../core/models/api.models';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardApiService } from '../../core/services/dashboard-api.service';
+import { UserReservationsPageComponent } from '../reservations/user-reservations-page.component';
 
 const REQUEST_TIMEOUT_MS = 8000;
 type DashboardModal =
@@ -28,7 +29,7 @@ type DashboardModal =
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UserReservationsPageComponent],
   templateUrl: './dashboard-page.component.html',
   styleUrl: './dashboard-page.component.scss',
 })
@@ -91,6 +92,10 @@ export class DashboardPageComponent implements OnInit {
 
   protected get isSudo(): boolean {
     return this.authService.isSudo();
+  }
+
+  protected get isRegularUser(): boolean {
+    return this.authService.user()?.role === 'user';
   }
 
   protected get summary() {
@@ -280,6 +285,10 @@ export class DashboardPageComponent implements OnInit {
   }
 
   protected roleLabel(role: UserRole | null | undefined): string {
+    if (role === 'user') {
+      return 'Utilisateur';
+    }
+
     return role === 'sudo' ? 'Super admin' : 'Gestionnaire';
   }
 
@@ -741,6 +750,16 @@ export class DashboardPageComponent implements OnInit {
       await firstValueFrom(
         this.authService.refreshCurrentUser().pipe(timeout(REQUEST_TIMEOUT_MS)),
       );
+
+      if (this.isRegularUser) {
+        this.dashboardState = null;
+        this.accounts = [];
+        this.isLoading = false;
+        this.isRefreshing = false;
+        this.render();
+        return;
+      }
+
       await this.loadDashboardState();
 
       this.isLoading = false;

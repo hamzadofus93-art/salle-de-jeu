@@ -4,6 +4,7 @@ import accountsRoutes from "./accounts.routes.mjs";
 import tablesRoutes from "./tables.routes.mjs";
 import matchesRoutes from "./matches.routes.mjs";
 import dashboardRoutes from "./dashboard.routes.mjs";
+import reservationsRoutes from "./reservations.routes.mjs";
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use("/accounts", accountsRoutes);
 router.use("/tables", tablesRoutes);
 router.use("/matches", matchesRoutes);
 router.use("/dashboard", dashboardRoutes);
+router.use("/reservations", reservationsRoutes);
 
 export default router;

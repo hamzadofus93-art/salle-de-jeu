@@ -1,3 +1,17 @@
+<ng-container *ngIf="isRegularUser; else staffDashboard">
+  <div class="dashboard-shell">
+    <div class="container-fluid dashboard-layout">
+      <div *ngIf="isLoading" class="panel panel-loading">
+        <div class="spinner-border text-danger mb-3" role="status"></div>
+        <p class="mb-0">Chargement de ton espace reservation...</p>
+      </div>
+
+      <app-user-reservations-page *ngIf="!isLoading"></app-user-reservations-page>
+    </div>
+  </div>
+</ng-container>
+
+<ng-template #staffDashboard>
 <div class="dashboard-shell">
   <div class="container-fluid dashboard-layout">
     <header class="topbar">
@@ -681,6 +695,17 @@
                       <button
                         class="shortcut-chip shortcut-chip-select"
                         type="button"
+                        [class.shortcut-chip-active]="accountForm.role === 'user'"
+                        (click)="selectAccountRole('user')"
+                      >
+                        <span class="shortcut-chip-copy">
+                          <strong>Utilisateur</strong>
+                          <small>Reservation et consultation</small>
+                        </span>
+                      </button>
+                      <button
+                        class="shortcut-chip shortcut-chip-select"
+                        type="button"
                         [class.shortcut-chip-active]="accountForm.role === 'admin'"
                         (click)="selectAccountRole('admin')"
                       >
@@ -771,3 +796,4 @@
     </ng-container>
   </div>
 </div>
+</ng-template>

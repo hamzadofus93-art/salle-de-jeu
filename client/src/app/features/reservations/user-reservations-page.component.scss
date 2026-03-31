@@ -1,0 +1,208 @@
+:host {
+  display: block;
+}
+
+.reservation-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.reservation-topbar,
+.reservation-panel,
+.reservation-summary-card {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(42, 37, 33, 0.08);
+  background: rgba(255, 252, 246, 0.94);
+  box-shadow: var(--phoenix-shadow-soft);
+}
+
+.reservation-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.9fr);
+  gap: 1rem;
+  padding: 1.1rem;
+}
+
+.reservation-topbar h1,
+.reservation-panel h2 {
+  font-family: var(--phoenix-font-display);
+  color: var(--phoenix-ink-strong);
+}
+
+.eyebrow {
+  color: var(--phoenix-red);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.reservation-copy,
+.reservation-user-box small,
+.reservation-item span,
+.reservation-note,
+.reservation-form-hint {
+  color: var(--phoenix-ink-soft);
+}
+
+.reservation-topbar-side,
+.reservation-user-box,
+.reservation-actions,
+.reservation-panel,
+.reservation-form,
+.reservation-list,
+.reservation-item,
+.reservation-item-head,
+.reservation-meta,
+.reservation-hint-card,
+.reservation-item-actions,
+.reservation-edit-banner {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.reservation-user-box {
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: rgba(16, 84, 63, 0.08);
+}
+
+.reservation-user-box strong {
+  display: block;
+  color: var(--phoenix-ink-strong);
+}
+
+.reservation-user-badge,
+.reservation-owner-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 2rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(36, 83, 132, 0.12);
+  color: #1f4f83;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.reservation-owner-badge-mine {
+  background: rgba(180, 44, 32, 0.12);
+  color: var(--phoenix-red);
+}
+
+.reservation-actions {
+  grid-auto-flow: column;
+  justify-content: end;
+  align-items: start;
+}
+
+.reservation-summary-grid,
+.reservation-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.reservation-summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.reservation-summary-card {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.95rem 1rem;
+}
+
+.reservation-summary-card span {
+  color: var(--phoenix-ink-soft);
+  font-size: 0.85rem;
+}
+
+.reservation-summary-card strong {
+  color: var(--phoenix-ink-strong);
+  font-size: 1.45rem;
+}
+
+.reservation-grid {
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+}
+
+.reservation-panel {
+  padding: 1.2rem;
+}
+
+.reservation-panel-loading,
+.reservation-empty {
+  place-items: center;
+  text-align: center;
+  min-height: 12rem;
+}
+
+.reservation-empty-compact {
+  min-height: auto;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 1px dashed rgba(180, 44, 32, 0.18);
+  background: rgba(180, 44, 32, 0.06);
+  color: var(--phoenix-ink-soft);
+}
+
+.reservation-hint-card,
+.reservation-item {
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(42, 37, 33, 0.08);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.reservation-edit-banner {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(36, 83, 132, 0.16);
+  background: rgba(36, 83, 132, 0.06);
+}
+
+.reservation-edit-banner strong {
+  color: #1f4f83;
+}
+
+.reservation-hint-card strong,
+.reservation-item strong {
+  color: var(--phoenix-ink-strong);
+}
+
+.reservation-item-head {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.reservation-meta {
+  gap: 0.3rem;
+}
+
+.reservation-item-actions {
+  grid-auto-flow: column;
+  justify-content: end;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+@media (max-width: 991.98px) {
+  .reservation-topbar,
+  .reservation-grid,
+  .reservation-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-actions {
+    grid-auto-flow: row;
+    justify-content: stretch;
+  }
+
+  .reservation-item-actions {
+    grid-auto-flow: row;
+    justify-content: stretch;
+  }
+}

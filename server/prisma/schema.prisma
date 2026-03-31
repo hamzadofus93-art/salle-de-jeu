@@ -8,6 +8,7 @@ datasource db {
 }
 
 enum AccountRole {
+  USER
   ADMIN
   SUDO
 }
@@ -22,6 +23,11 @@ enum MatchStatus {
   FINISHED
 }
 
+enum ReservationStatus {
+  UPCOMING
+  CANCELED
+}
+
 model User {
   id           String      @id @default(cuid())
   username     String      @unique
@@ -31,6 +37,7 @@ model User {
   isActive     Boolean     @default(true)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
+  reservations Reservation[]
 }
 
 model GameTable {
@@ -46,6 +53,7 @@ model GameTable {
   updatedAt       DateTime          @updatedAt
   matches         Match[]
   waitingEntries  WaitingQueueEntry[]
+  reservations    Reservation[]
 }
 
 model Match {
@@ -80,4 +88,23 @@ model WaitingQueueEntry {
 
   @@unique([tableId, position])
   @@index([tableId, createdAt])
+}
+
+model Reservation {
+  id              String            @id @default(cuid())
+  tableId         String
+  userId          String
+  startAt         DateTime
+  endAt           DateTime
+  durationMinutes Int
+  note            String?
+  status          ReservationStatus @default(UPCOMING)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  table           GameTable         @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tableId, status, startAt])
+  @@index([status, startAt])
+  @@index([userId, startAt])
 }
