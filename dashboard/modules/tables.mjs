@@ -13,8 +13,8 @@ import {
 import { setActivePage } from "./navigation.mjs";
 import {
   focusStartPlayerField,
-  syncStartFormForTable,
-  updateFinishMatchDetails,
+  renderFinishForm,
+  renderStartForm,
 } from "./matches.mjs";
 
 export function renderTables() {
@@ -68,14 +68,13 @@ export function handleTablesGridClick(event) {
 
     if (action === "start") {
       elements.startTable.value = tableId;
-      syncStartFormForTable(tableId);
+      renderStartForm();
       setActivePage("start");
       focusStartPlayerField();
     } else if (action === "finish") {
       elements.finishTable.value = tableId;
-      updateFinishMatchDetails();
+      renderFinishForm();
       setActivePage("finish");
-      elements.finishTable.focus();
     }
 
     return;

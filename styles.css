@@ -1424,6 +1424,7 @@ button:disabled {
 }
 
 .stack-form label,
+.stack-field,
 .winner-fieldset {
   display: grid;
   gap: 8px;
@@ -1431,9 +1432,8 @@ button:disabled {
   color: var(--ink);
 }
 
-.stack-form input,
+.stack-form input:not([type="hidden"]),
 .waiting-form input,
-.stack-form select,
 .stack-form textarea {
   width: 100%;
   border: 1px solid var(--line);
@@ -1445,12 +1445,74 @@ button:disabled {
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
-.stack-form input:focus,
+.stack-form input:not([type="hidden"]):focus,
 .waiting-form input:focus,
-.stack-form select:focus,
 .stack-form textarea:focus {
   border-color: rgba(255, 39, 46, 0.34);
   box-shadow: 0 0 0 4px rgba(255, 39, 46, 0.12);
+}
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.choice-grid-compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.choice-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(20, 19, 22, 0.08);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--ink);
+  text-align: left;
+  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.choice-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.choice-copy small,
+.choice-detail {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.choice-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 39, 46, 0.24);
+  box-shadow: 0 12px 28px rgba(20, 19, 22, 0.08);
+}
+
+.choice-button:focus-visible {
+  border-color: rgba(255, 39, 46, 0.34);
+  box-shadow: 0 0 0 4px rgba(255, 39, 46, 0.12);
+  outline: none;
+}
+
+.choice-button.is-active {
+  border-color: rgba(255, 39, 46, 0.28);
+  background: rgba(255, 39, 46, 0.1);
+  transform: translateY(-1px);
+}
+
+.choice-button:disabled,
+.choice-button.is-disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 .empty-state {

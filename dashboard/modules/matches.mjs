@@ -20,11 +20,20 @@ export function renderStartForm() {
   const freeTables = getFreeTables(state);
 
   if (freeTables.length === 0) {
-    elements.startTable.innerHTML =
-      '<option value="">Aucune table libre</option>';
-    elements.startTable.disabled = true;
-    resetPlayerSelect(elements.playerOne, "Choisir Joueur 1");
-    resetPlayerSelect(elements.playerTwo, "Choisir Joueur 2");
+    elements.startTable.value = "";
+    elements.startTableOptions.innerHTML = createChoiceEmptyMarkup(
+      "Aucune table libre pour le moment.",
+    );
+    resetPlayerChoices(
+      elements.playerOne,
+      elements.playerOneOptions,
+      "Choisis d'abord une table libre.",
+    );
+    resetPlayerChoices(
+      elements.playerTwo,
+      elements.playerTwoOptions,
+      "Choisis d'abord une table libre.",
+    );
     elements.startSubmit.disabled = true;
     elements.startSubmit.textContent = "Salle complete";
     syncReservationFields("");
@@ -32,21 +41,27 @@ export function renderStartForm() {
   }
 
   const currentValue = elements.startTable.value;
-  elements.startTable.disabled = false;
+  const selectedTableId = freeTables.some((table) => table.id === currentValue)
+    ? currentValue
+    : freeTables[0]?.id || "";
+
+  elements.startTable.value = selectedTableId;
   elements.startSubmit.disabled = false;
   elements.startSubmit.textContent = "Reserver la table";
-  elements.startTable.innerHTML = freeTables
-    .map(
-      (table) =>
-        `<option value="${table.id}">${table.name} - ${table.discipline}</option>`,
+  elements.startTableOptions.innerHTML = freeTables
+    .map((table) =>
+      createChoiceButtonMarkup({
+        action: "start-table",
+        value: table.id,
+        title: table.name,
+        subtitle: table.discipline,
+        detail: `${table.waitingPlayers?.length || 0} en attente`,
+        active: table.id === selectedTableId,
+      }),
     )
     .join("");
 
-  if (freeTables.some((table) => table.id === currentValue)) {
-    elements.startTable.value = currentValue;
-  }
-
-  syncStartFormForTable(elements.startTable.value);
+  syncStartFormForTable(selectedTableId);
 }
 
 export function syncStartFormForTable(tableId) {
@@ -55,7 +70,9 @@ export function syncStartFormForTable(tableId) {
 }
 
 export function focusStartPlayerField() {
-  appContext.elements.playerOne.focus();
+  appContext.elements.playerOneOptions
+    ?.querySelector("button:not([disabled])")
+    ?.focus();
 }
 
 export function renderFinishForm() {
@@ -65,7 +82,8 @@ export function renderFinishForm() {
   if (activeTables.length === 0) {
     elements.finishEmpty.hidden = false;
     elements.finishForm.hidden = true;
-    elements.finishTable.innerHTML = "";
+    elements.finishTable.value = "";
+    elements.finishTableOptions.innerHTML = "";
     elements.winnerOptions.innerHTML = "";
     elements.activeMatchSummary.innerHTML = "";
     return;
@@ -75,18 +93,69 @@ export function renderFinishForm() {
   elements.finishForm.hidden = false;
 
   const currentValue = elements.finishTable.value;
-  elements.finishTable.innerHTML = activeTables
-    .map(
-      (table) =>
-        `<option value="${table.id}">${table.name} - ${table.currentMatch.players.map(escapeHtml).join(" vs ")}</option>`,
+  const selectedTableId = activeTables.some((table) => table.id === currentValue)
+    ? currentValue
+    : activeTables[0]?.id || "";
+
+  elements.finishTable.value = selectedTableId;
+  elements.finishTableOptions.innerHTML = activeTables
+    .map((table) =>
+      createChoiceButtonMarkup({
+        action: "finish-table",
+        value: table.id,
+        title: table.name,
+        subtitle: table.discipline,
+        detail: table.currentMatch?.players.map(escapeHtml).join(" vs ") || "",
+        active: table.id === selectedTableId,
+      }),
     )
     .join("");
 
-  if (activeTables.some((table) => table.id === currentValue)) {
-    elements.finishTable.value = currentValue;
+  updateFinishMatchDetails();
+}
+
+export function handleStartFormClick(event) {
+  const choiceButton = event.target.closest("button[data-choice-action]");
+
+  if (!choiceButton || choiceButton.disabled) {
+    return;
   }
 
-  updateFinishMatchDetails();
+  const { elements } = appContext;
+  const { choiceAction, choiceValue } = choiceButton.dataset;
+
+  if (choiceAction === "start-table") {
+    elements.startTable.value = choiceValue || "";
+    renderStartForm();
+    focusStartPlayerField();
+    return;
+  }
+
+  if (choiceAction === "start-player-one") {
+    elements.playerOne.value = sanitizeName(choiceValue);
+    syncStartPlayerOptions(elements.startTable.value);
+    return;
+  }
+
+  if (choiceAction === "start-player-two") {
+    elements.playerTwo.value = sanitizeName(choiceValue);
+    syncStartPlayerOptions(elements.startTable.value);
+  }
+}
+
+export function handleFinishFormClick(event) {
+  const choiceButton = event.target.closest("button[data-choice-action]");
+
+  if (!choiceButton || choiceButton.disabled) {
+    return;
+  }
+
+  if (choiceButton.dataset.choiceAction !== "finish-table") {
+    return;
+  }
+
+  appContext.elements.finishTable.value = choiceButton.dataset.choiceValue || "";
+  renderFinishForm();
 }
 
 export function updateFinishMatchDetails() {
@@ -243,21 +312,29 @@ function syncStartPlayerOptions(tableId) {
   const knownPlayers = table ? getKnownPlayers(tableId) : [];
   const hasEnoughPlayers = knownPlayers.length >= 2;
 
-  setPlayerSelectOptions(elements.playerOne, {
+  setPlayerChoiceOptions(elements.playerOne, elements.playerOneOptions, {
     players: knownPlayers,
-    placeholder: "Choisir Joueur 1",
+    action: "start-player-one",
     preferredValue: waitingPlayers[0],
+    priorityPlayers: waitingPlayers,
+    fallbackMessage: "Aucun joueur disponible.",
   });
 
-  setPlayerSelectOptions(elements.playerTwo, {
+  setPlayerChoiceOptions(elements.playerTwo, elements.playerTwoOptions, {
     players: knownPlayers,
-    placeholder: "Choisir Joueur 2",
+    action: "start-player-two",
     preferredValue: waitingPlayers[1],
+    priorityPlayers: waitingPlayers,
+    fallbackMessage: "Aucun joueur disponible.",
   });
 
-  elements.playerOne.disabled = !table || knownPlayers.length === 0;
-  elements.playerTwo.disabled = !table || knownPlayers.length === 0;
-  elements.startSubmit.disabled = !hasEnoughPlayers;
+  const hasSelections = Boolean(elements.playerOne.value && elements.playerTwo.value);
+  const hasDifferentPlayers =
+    !elements.playerOne.value
+    || !elements.playerTwo.value
+    || !namesMatch(elements.playerOne.value, elements.playerTwo.value);
+
+  elements.startSubmit.disabled = !hasEnoughPlayers || !hasSelections || !hasDifferentPlayers;
   elements.startSubmit.textContent = hasEnoughPlayers
     ? "Reserver la table"
     : "Ajoute 2 joueurs au lobby";
@@ -362,31 +439,52 @@ function appendUniquePlayer(players, player) {
   }
 }
 
-function setPlayerSelectOptions(
-  selectElement,
-  { players, placeholder, preferredValue = "" },
+function setPlayerChoiceOptions(
+  inputElement,
+  containerElement,
+  {
+    players,
+    action,
+    preferredValue = "",
+    priorityPlayers = [],
+    fallbackMessage = "",
+  },
 ) {
-  const currentValue = sanitizeName(selectElement.value);
+  const currentValue = sanitizeName(inputElement.value);
   const nextValue =
     findMatchingPlayer(players, currentValue)
     || findMatchingPlayer(players, preferredValue)
     || "";
 
-  selectElement.innerHTML = [
-    `<option value="">${escapeHtml(placeholder)}</option>`,
-    ...players.map(
-      (player) =>
-        `<option value="${escapeAttribute(player)}">${escapeHtml(player)}</option>`,
-    ),
-  ].join("");
+  inputElement.value = nextValue;
 
-  selectElement.value = nextValue;
+  if (!players.length) {
+    containerElement.innerHTML = createChoiceEmptyMarkup(
+      fallbackMessage || "Aucun choix disponible.",
+    );
+    return;
+  }
+
+  containerElement.innerHTML = players
+    .map((player) =>
+      createChoiceButtonMarkup({
+        action,
+        value: player,
+        title: player,
+        subtitle: priorityPlayers.some((currentPlayer) =>
+          namesMatch(currentPlayer, player),
+        )
+          ? "En attente sur cette table"
+          : "Disponible",
+        active: namesMatch(player, nextValue),
+      }),
+    )
+    .join("");
 }
 
-function resetPlayerSelect(selectElement, placeholder) {
-  selectElement.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>`;
-  selectElement.value = "";
-  selectElement.disabled = true;
+function resetPlayerChoices(inputElement, containerElement, message) {
+  inputElement.value = "";
+  containerElement.innerHTML = createChoiceEmptyMarkup(message);
 }
 
 function findMatchingPlayer(players, value) {
@@ -425,4 +523,32 @@ function createMatchId() {
   }
 
   return `match-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function createChoiceButtonMarkup({
+  action,
+  value,
+  title,
+  subtitle = "",
+  detail = "",
+  active = false,
+}) {
+  return `
+    <button
+      type="button"
+      class="choice-button ${active ? "is-active" : ""}"
+      data-choice-action="${escapeAttribute(action)}"
+      data-choice-value="${escapeAttribute(value)}"
+    >
+      <span class="choice-copy">
+        <strong>${escapeHtml(title)}</strong>
+        ${subtitle ? `<small>${escapeHtml(subtitle)}</small>` : ""}
+      </span>
+      ${detail ? `<span class="choice-detail">${detail}</span>` : ""}
+    </button>
+  `;
+}
+
+function createChoiceEmptyMarkup(message) {
+  return `<p class="empty-state compact">${escapeHtml(message)}</p>`;
 }

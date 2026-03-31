@@ -1,234 +1,82 @@
 <div class="login-shell">
-  <div class="container py-4 py-lg-5 login-layout">
-    <div class="row justify-content-center align-items-center flex-grow-1 g-4">
-      <div class="col-lg-6 col-xl-5">
-        <div class="brand-panel p-4 p-lg-5">
-          <div class="brand-logo-frame" aria-label="Phoenix Snooker Club">
-            <img
-              class="brand-logo"
-              src="branding/phoenix-logo-primary.png"
-              alt="Phoenix Snooker Club"
+  <div class="container py-4 py-lg-5">
+    <section class="login-card">
+      <div class="brand-block">
+        <div class="brand-logo-frame" aria-label="Phoenix Snooker Club">
+          <img
+            class="brand-logo"
+            src="branding/phoenix-logo-primary.png"
+            alt="Phoenix Snooker Club"
+          />
+        </div>
+
+        <p class="login-kicker mb-2">Phoenix Snooker Club</p>
+        <h1 class="mb-2">Connexion equipe</h1>
+        <p class="login-copy mb-0">
+          Entre simplement tes identifiants pour ouvrir la gestion de salle.
+        </p>
+      </div>
+
+      <div
+        *ngIf="errorMessage"
+        class="alert alert-danger"
+        role="alert"
+        aria-live="polite"
+      >
+        {{ errorMessage }}
+      </div>
+
+      <form (ngSubmit)="submit()" #loginForm="ngForm" class="login-form">
+        <div>
+          <label for="username" class="form-label">Identifiant</label>
+          <input
+            id="username"
+            name="username"
+            class="form-control form-control-lg"
+            type="text"
+            autocomplete="username"
+            placeholder="Identifiant"
+            [(ngModel)]="credentials.username"
+            required
+          />
+        </div>
+
+        <div>
+          <label for="password" class="form-label">Mot de passe</label>
+          <div class="input-group input-group-lg">
+            <input
+              id="password"
+              name="password"
+              class="form-control"
+              [type]="isPasswordVisible ? 'text' : 'password'"
+              autocomplete="current-password"
+              placeholder="Mot de passe"
+              [(ngModel)]="credentials.password"
+              required
             />
-          </div>
-
-          <p class="text-uppercase small fw-semibold brand-kicker mb-2">
-            Interface administration
-          </p>
-          <h1 class="display-5 fw-bold brand-title mb-3">Connexion au dashboard</h1>
-          <p class="lead brand-copy mb-0">
-            Pilote la salle Phoenix, orchestre les reservations, garde le
-            lobby fluide et transforme chaque match en victoire bien tracee.
-          </p>
-
-          <div class="phoenix-stripes brand-stripes" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
+            <button
+              class="btn btn-outline-dark password-toggle"
+              type="button"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-pressed]="isPasswordVisible"
+            >
+              {{ isPasswordVisible ? 'Masquer' : 'Afficher' }}
+            </button>
           </div>
         </div>
-      </div>
 
-      <div class="col-lg-5 col-xl-4">
-        <div class="card shadow-lg border-0 login-card">
-          <div class="card-body p-4 p-lg-5">
-            <div class="mb-4">
-              <p class="text-uppercase small fw-semibold text-danger mb-2">
-                Acces securise
-              </p>
-              <h2 class="h3 mb-0">Se connecter</h2>
-            </div>
-
-            <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
-              {{ errorMessage }}
-            </div>
-
-            <form (ngSubmit)="submit()" #loginForm="ngForm" class="d-grid gap-3">
-              <div>
-                <label for="username" class="form-label">Identifiant</label>
-                <input
-                  id="username"
-                  name="username"
-                  class="form-control form-control-lg"
-                  type="text"
-                  autocomplete="username"
-                  [(ngModel)]="credentials.username"
-                  required
-                />
-              </div>
-
-              <div>
-                <label for="password" class="form-label">Mot de passe</label>
-                <input
-                  id="password"
-                  name="password"
-                  class="form-control form-control-lg"
-                  type="password"
-                  autocomplete="current-password"
-                  [(ngModel)]="credentials.password"
-                  required
-                />
-              </div>
-
-              <button
-                class="btn btn-danger btn-lg w-100"
-                type="submit"
-                [disabled]="isSubmitting || loginForm.invalid"
-              >
-                <span
-                  *ngIf="isSubmitting"
-                  class="spinner-border spinner-border-sm me-2"
-                ></span>
-                Ouvrir le dashboard
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <footer class="site-contact-card site-footer">
-      <p class="text-uppercase small fw-semibold site-contact-kicker mb-2">
-        Morocco Snooker
-      </p>
-      <h2 class="h5 site-contact-title mb-3">Contact & reseaux</h2>
-
-      <div class="site-contact-grid">
-        <a
-          class="site-contact-link"
-          href="https://www.facebook.com/profile.php?id=61566398506964"
-          target="_blank"
-          rel="noopener"
-          aria-label="Ouvrir la page Facebook Morocco Snooker"
+        <button
+          class="btn btn-danger btn-lg w-100"
+          type="submit"
+          [disabled]="isSubmitting || loginForm.invalid"
         >
-          <span class="site-contact-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" role="presentation">
-              <path
-                fill="currentColor"
-                d="M13.5 22v-8h2.7l.4-3h-3.1V9.1c0-.9.3-1.5 1.6-1.5h1.7V5c-.3 0-1.3-.1-2.5-.1-2.4 0-4 1.5-4 4.2V11H7.5v3h2.7v8h3.3Z"
-              />
-            </svg>
-          </span>
-          <span class="site-contact-copy">
-            <strong>Facebook</strong>
-            <small>Page officielle</small>
-          </span>
-        </a>
-
-        <a
-          class="site-contact-link"
-          href="https://wa.me/212635800888"
-          target="_blank"
-          rel="noopener"
-          aria-label="Contacter Morocco Snooker sur WhatsApp"
-        >
-          <span class="site-contact-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" role="presentation">
-              <path
-                d="M7 4h3l1 4-2 1a12 12 0 0 0 6 6l1-2 4 1v3a2 2 0 0 1-2 2A16 16 0 0 1 5 6a2 2 0 0 1 2-2Z"
-                fill="none"
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-              />
-            </svg>
-          </span>
-          <span class="site-contact-copy">
-            <strong>WhatsApp</strong>
-            <small>0635-800888</small>
-          </span>
-        </a>
-
-        <a
-          class="site-contact-link"
-          href="mailto:Contact@moroccosnooker.com"
-          aria-label="Envoyer un email a Morocco Snooker"
-        >
-          <span class="site-contact-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" role="presentation">
-              <rect
-                x="3"
-                y="5"
-                width="18"
-                height="14"
-                rx="2"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-              />
-              <path
-                d="m4 7 8 6 8-6"
-                fill="none"
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-              />
-            </svg>
-          </span>
-          <span class="site-contact-copy">
-            <strong>Email</strong>
-            <small>Contact@moroccosnooker.com</small>
-          </span>
-        </a>
-
-        <a
-          class="site-contact-link"
-          href="https://www.moroccosnooker.com"
-          target="_blank"
-          rel="noopener"
-          aria-label="Ouvrir le site Morocco Snooker"
-        >
-          <span class="site-contact-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" role="presentation">
-              <circle
-                cx="12"
-                cy="12"
-                r="8"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-              />
-              <path
-                d="M4 12h16M12 4a12 12 0 0 1 0 16M12 4a12 12 0 0 0 0 16"
-                fill="none"
-                stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="1.5"
-              />
-            </svg>
-          </span>
-          <span class="site-contact-copy">
-            <strong>Site web</strong>
-            <small>www.moroccosnooker.com</small>
-          </span>
-        </a>
-      </div>
-
-      <p class="site-contact-copyright mb-0">
-        <span class="site-contact-copyright-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" role="presentation">
-            <circle
-              cx="12"
-              cy="12"
-              r="8"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-            />
-            <path
-              d="M14.7 9.4a3.7 3.7 0 1 0 0 5.2"
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="1.5"
-            />
-          </svg>
-        </span>
-        <span>Copyright Laanaya Hamza</span>
-      </p>
-    </footer>
+          <span
+            *ngIf="isSubmitting"
+            class="spinner-border spinner-border-sm me-2"
+          ></span>
+          Se connecter
+        </button>
+      </form>
+    </section>
   </div>
 </div>

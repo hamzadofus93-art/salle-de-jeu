@@ -15,14 +15,15 @@ import {
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardApiService } from '../../core/services/dashboard-api.service';
 
-type DashboardSection =
-  | 'overview'
-  | 'tables'
-  | 'matches'
-  | 'performance'
-  | 'accounts';
-
 const REQUEST_TIMEOUT_MS = 8000;
+type DashboardModal =
+  | 'add-player'
+  | 'start-match'
+  | 'finish-match'
+  | 'queues'
+  | 'history'
+  | 'admin'
+  | null;
 
 @Component({
   selector: 'app-dashboard-page',
@@ -41,12 +42,20 @@ export class DashboardPageComponent implements OnInit {
 
   protected dashboardState: DashboardState | null = null;
   protected accounts: UserAccount[] = [];
-  protected activeSection: DashboardSection = 'overview';
   protected isLoading = true;
   protected isRefreshing = false;
+  protected activeModal: DashboardModal = null;
+  protected isAddPlayerTableMenuOpen = false;
+  protected isStartTableMenuOpen = false;
+  protected lockedAddPlayerTableId = '';
+  protected lockedStartTableId = '';
+  protected lockedFinishMatchId = '';
   protected errorMessage = '';
   protected successMessage = '';
-  protected waitingDrafts: Record<string, string> = {};
+  protected readonly addPlayerForm = {
+    tableId: '',
+    playerName: '',
+  };
   protected readonly startForm = {
     tableId: '',
     playerOne: '',
@@ -100,28 +109,112 @@ export class DashboardPageComponent implements OnInit {
     return this.tables.filter((table) => table.status === 'occupied');
   }
 
-  protected get poolTables(): DashboardTable[] {
-    return this.tables.filter((table) => table.discipline === 'Pool anglais');
+  protected get leaderboard() {
+    return this.dashboardState?.leaderboard ?? [];
   }
 
-  protected get snookerTables(): DashboardTable[] {
-    return this.tables.filter((table) => table.discipline === 'Snooker');
+  protected get history() {
+    return this.dashboardState?.history ?? [];
   }
 
-  protected get activePoolTablesCount(): number {
-    return this.poolTables.filter((table) => table.status === 'occupied').length;
+  protected get totalWaitingPlayers(): number {
+    return this.tables.reduce(
+      (total, table) => total + table.waitingPlayers.length,
+      0,
+    );
   }
 
-  protected get activeSnookerTablesCount(): number {
-    return this.snookerTables.filter((table) => table.status === 'occupied').length;
+  protected get tablesReadyToStart(): DashboardTable[] {
+    return this.freeTables.filter((table) => table.waitingPlayers.length >= 2);
+  }
+
+  protected get queueTables(): DashboardTable[] {
+    return [...this.tables].sort((left, right) => {
+      const waitingDifference =
+        right.waitingPlayers.length - left.waitingPlayers.length;
+
+      if (waitingDifference !== 0) {
+        return waitingDifference;
+      }
+
+      return left.name.localeCompare(right.name, 'fr');
+    });
+  }
+
+  protected get selectedAddPlayerTable(): DashboardTable | null {
+    return this.tables.find((table) => table.id === this.addPlayerForm.tableId) ?? null;
+  }
+
+  protected get addPlayerActionLabel(): string {
+    return this.selectedAddPlayerTable
+      ? `Ajouter sur ${this.selectedAddPlayerTable.name}`
+      : 'Ajouter';
+  }
+
+  protected get addPlayerFieldLabel(): string {
+    return this.selectedAddPlayerTable
+      ? `Nom du joueur pour ${this.selectedAddPlayerTable.name}`
+      : 'Nom du joueur';
+  }
+
+  protected get addPlayerFieldPlaceholder(): string {
+    return this.selectedAddPlayerTable
+      ? `Exemple : prochain joueur pour ${this.selectedAddPlayerTable.name}`
+      : 'Nom du joueur';
+  }
+
+  protected get addPlayerTableSummary(): string {
+    if (!this.selectedAddPlayerTable) {
+      return 'Choisir une table';
+    }
+
+    return `${this.selectedAddPlayerTable.discipline} - ${this.waitingLabel(this.selectedAddPlayerTable)}`;
+  }
+
+  protected get addPlayerWaitingNames(): string[] {
+    return this.selectedAddPlayerTable?.waitingPlayers.map(
+      (entry) => `#${entry.position} ${entry.playerName}`,
+    ) ?? [];
+  }
+
+  protected get canStartSelectedAddPlayerTable(): boolean {
+    return !!this.selectedAddPlayerTable
+      && this.selectedAddPlayerTable.status === 'free'
+      && this.selectedAddPlayerTable.waitingPlayers.length >= 2;
+  }
+
+  protected get activeAccountCount(): number {
+    return this.accounts.filter((account) => account.isActive).length;
+  }
+
+  protected get inactiveAccountCount(): number {
+    return this.accounts.filter((account) => !account.isActive).length;
+  }
+
+  protected get sudoAccountCount(): number {
+    return this.accounts.filter((account) => account.role === 'sudo').length;
   }
 
   protected get selectedStartTable(): DashboardTable | null {
-    return this.freeTables.find((table) => table.id === this.startForm.tableId) ?? null;
+    return this.tablesReadyToStart.find((table) => table.id === this.startForm.tableId) ?? null;
   }
 
   protected get selectedStartWaitingPlayers(): WaitingPlayerEntry[] {
     return this.selectedStartTable?.waitingPlayers ?? [];
+  }
+
+  protected get startTableSummary(): string {
+    if (!this.selectedStartTable) {
+      return 'Choisir une table prete';
+    }
+
+    return `${this.selectedStartTable.discipline} - ${this.waitingLabel(this.selectedStartTable)}`;
+  }
+
+  protected get startTableWaitingNames(): string[] {
+    return this.selectedStartWaitingPlayers.map(
+      (entry) => `#${entry.position} ${entry.playerName}`,
+    );
   }
 
   protected get startPlayerOneOptions(): WaitingPlayerEntry[] {
@@ -140,6 +233,24 @@ export class DashboardPageComponent implements OnInit {
     return this.selectedStartWaitingPlayers.length >= 2;
   }
 
+  protected get canSubmitStartMatch(): boolean {
+    if (
+      !this.selectedStartTable
+      || !this.startForm.playerOne
+      || !this.startForm.playerTwo
+      || !this.hasEnoughWaitingPlayersForStart
+    ) {
+      return false;
+    }
+
+    if (this.namesMatch(this.startForm.playerOne, this.startForm.playerTwo)) {
+      return false;
+    }
+
+    return this.selectedStartTable.discipline !== 'Pool anglais'
+      || Number(this.startForm.durationMinutes) >= 15;
+  }
+
   protected get selectedFinishTable(): DashboardTable | null {
     return (
       this.activeTables.find(
@@ -152,12 +263,289 @@ export class DashboardPageComponent implements OnInit {
     return this.selectedFinishTable?.currentMatch ?? null;
   }
 
-  protected setSection(section: DashboardSection): void {
-    if (section === 'accounts' && !this.isSudo) {
+  protected get canSubmitFinishMatch(): boolean {
+    return !!this.selectedFinishMatch && !!this.finishForm.winner;
+  }
+
+  protected get mainActionLabel(): string {
+    if (this.tablesReadyToStart.length) {
+      return 'Demarrer une partie';
+    }
+
+    if (this.activeTables.length) {
+      return 'Terminer une partie';
+    }
+
+    return 'Ajouter un joueur';
+  }
+
+  protected roleLabel(role: UserRole | null | undefined): string {
+    return role === 'sudo' ? 'Super admin' : 'Gestionnaire';
+  }
+
+  protected accountStatusLabel(account: UserAccount): string {
+    return account.isActive ? 'Actif' : 'Inactif';
+  }
+
+  protected tableStatusLabel(table: DashboardTable): string {
+    if (table.status === 'occupied') {
+      return 'En cours';
+    }
+
+    if (table.waitingPlayers.length >= 2) {
+      return 'Prete';
+    }
+
+    return 'Libre';
+  }
+
+  protected tableStatusClass(table: DashboardTable): string {
+    if (table.status === 'occupied') {
+      return 'badge-danger';
+    }
+
+    if (table.waitingPlayers.length >= 2) {
+      return 'badge-warning';
+    }
+
+    return 'badge-success';
+  }
+
+  protected waitingLabel(table: DashboardTable): string {
+    if (!table.waitingPlayers.length) {
+      return 'Aucun joueur';
+    }
+
+    if (table.waitingPlayers.length === 1) {
+      return '1 joueur en attente';
+    }
+
+    return `${table.waitingPlayers.length} joueurs en attente`;
+  }
+
+  protected formatMatchDuration(match: MatchRecord | null | undefined): string {
+    return match?.durationMinutes ? `${match.durationMinutes} min` : 'Libre';
+  }
+
+  protected closeModal(): void {
+    this.activeModal = null;
+    this.isAddPlayerTableMenuOpen = false;
+    this.isStartTableMenuOpen = false;
+    this.lockedAddPlayerTableId = '';
+    this.lockedStartTableId = '';
+    this.lockedFinishMatchId = '';
+    this.render();
+  }
+
+  protected openMainAction(): void {
+    if (this.tablesReadyToStart.length) {
+      this.openStartMatchModal();
       return;
     }
 
-    this.activeSection = section;
+    if (this.activeTables.length) {
+      this.openFinishMatchModal();
+      return;
+    }
+
+    this.openAddPlayerModal();
+  }
+
+  protected openHistoryModal(): void {
+    this.isAddPlayerTableMenuOpen = false;
+    this.isStartTableMenuOpen = false;
+    this.lockedAddPlayerTableId = '';
+    this.lockedStartTableId = '';
+    this.lockedFinishMatchId = '';
+    this.activeModal = 'history';
+    this.render();
+  }
+
+  protected openQueuesModal(): void {
+    this.isAddPlayerTableMenuOpen = false;
+    this.isStartTableMenuOpen = false;
+    this.lockedAddPlayerTableId = '';
+    this.lockedStartTableId = '';
+    this.lockedFinishMatchId = '';
+    this.activeModal = 'queues';
+    this.render();
+  }
+
+  protected openAdminModal(): void {
+    if (!this.isSudo) {
+      return;
+    }
+
+    this.isAddPlayerTableMenuOpen = false;
+    this.isStartTableMenuOpen = false;
+    this.lockedAddPlayerTableId = '';
+    this.lockedStartTableId = '';
+    this.lockedFinishMatchId = '';
+    this.activeModal = 'admin';
+    this.render();
+  }
+
+  protected openAddPlayerModal(table?: DashboardTable): void {
+    const preferredTable = table ?? this.selectedAddPlayerTable ?? this.tables[0] ?? null;
+    this.isAddPlayerTableMenuOpen = false;
+    this.isStartTableMenuOpen = false;
+    this.lockedAddPlayerTableId = table?.id ?? '';
+    this.lockedStartTableId = '';
+    this.lockedFinishMatchId = '';
+    this.addPlayerForm.tableId = preferredTable?.id ?? '';
+    this.addPlayerForm.playerName = '';
+    this.activeModal = 'add-player';
+    this.render();
+  }
+
+  protected toggleAddPlayerTableMenu(): void {
+    if (this.lockedAddPlayerTableId) {
+      return;
+    }
+
+    this.isAddPlayerTableMenuOpen = !this.isAddPlayerTableMenuOpen;
+    this.clearAlerts();
+    this.render();
+  }
+
+  protected selectAddPlayerTable(table: DashboardTable): void {
+    this.addPlayerForm.tableId = table.id;
+    this.isAddPlayerTableMenuOpen = false;
+    this.clearAlerts();
+    this.render();
+  }
+
+  protected openStartMatchFromAddPlayer(): void {
+    if (!this.canStartSelectedAddPlayerTable || !this.selectedAddPlayerTable) {
+      return;
+    }
+
+    this.openStartMatchModal(this.selectedAddPlayerTable);
+  }
+
+  protected selectStartTable(table: DashboardTable): void {
+    if (table.status !== 'free' || table.waitingPlayers.length < 2) {
+      return;
+    }
+
+    this.startForm.tableId = table.id;
+    this.isStartTableMenuOpen = false;
+    this.clearAlerts();
+    this.handleStartTableChange();
+  }
+
+  protected toggleStartTableMenu(): void {
+    if (this.lockedStartTableId || !this.tablesReadyToStart.length) {
+      return;
+    }
+
+    this.isStartTableMenuOpen = !this.isStartTableMenuOpen;
+    this.clearAlerts();
+    this.render();
+  }
+
+  protected selectStartPlayer(
+    playerField: 'playerOne' | 'playerTwo',
+    playerName: string,
+  ): void {
+    this.startForm[playerField] = playerName;
+    this.clearAlerts();
+    this.handleStartPlayerSelectionChange(playerField);
+  }
+
+  protected openStartMatchModal(table?: DashboardTable): void {
+    this.isAddPlayerTableMenuOpen = false;
+    this.isStartTableMenuOpen = false;
+    const preferredTable =
+      table && table.status === 'free' && table.waitingPlayers.length >= 2
+        ? table
+        : this.selectedStartTable ?? this.tablesReadyToStart[0] ?? null;
+
+    this.lockedAddPlayerTableId = '';
+    this.lockedStartTableId =
+      table?.status === 'free' && table.waitingPlayers.length >= 2
+        ? table.id
+        : this.tablesReadyToStart.length === 1
+          ? this.tablesReadyToStart[0]?.id ?? ''
+          : '';
+    this.lockedFinishMatchId = '';
+    this.startForm.tableId = preferredTable?.id ?? '';
+    this.handleStartTableChange();
+    this.activeModal = 'start-match';
+    this.render();
+  }
+
+  protected openFinishMatchModal(table?: DashboardTable): void {
+    this.isAddPlayerTableMenuOpen = false;
+    this.isStartTableMenuOpen = false;
+    const selectedTable =
+      table && table.currentMatch
+        ? table
+        : this.selectedFinishTable ?? this.activeTables[0] ?? null;
+    const match = selectedTable?.currentMatch;
+
+    this.lockedAddPlayerTableId = '';
+    this.lockedStartTableId = '';
+    this.lockedFinishMatchId =
+      table?.currentMatch?.id
+        ?? (this.activeTables.length === 1 ? this.activeTables[0]?.currentMatch?.id ?? '' : '');
+
+    if (!match) {
+      this.activeModal = 'finish-match';
+      this.render();
+      return;
+    }
+
+    this.finishForm.matchId = match.id;
+    this.finishForm.winner = match.playerOne;
+    this.activeModal = 'finish-match';
+    this.render();
+  }
+
+  protected selectFinishMatch(table: DashboardTable): void {
+    const match = table.currentMatch;
+
+    if (!match) {
+      return;
+    }
+
+    this.finishForm.matchId = match.id;
+    this.finishForm.winner = match.playerOne;
+    this.clearAlerts();
+    this.render();
+  }
+
+  protected selectFinishWinner(winner: string): void {
+    this.finishForm.winner = winner;
+    this.clearAlerts();
+    this.render();
+  }
+
+  protected async submitAddPlayer(): Promise<void> {
+    const table = this.selectedAddPlayerTable;
+    const playerName = this.addPlayerForm.playerName.trim();
+
+    if (!table) {
+      this.errorMessage = 'Choisis une table.';
+      this.render();
+      return;
+    }
+
+    if (!playerName) {
+      this.errorMessage = 'Entre le nom du joueur.';
+      this.render();
+      return;
+    }
+
+    await this.runAction(async () => {
+      await firstValueFrom(this.dashboardApi.addWaitingPlayer(table.id, playerName));
+      this.addPlayerForm.playerName = '';
+      await this.reloadData(`${playerName} ajoute sur ${table.name}.`);
+      this.addPlayerForm.tableId = table.id;
+      this.isAddPlayerTableMenuOpen = false;
+      this.activeModal = 'add-player';
+      this.render();
+    });
   }
 
   protected async refresh(): Promise<void> {
@@ -168,21 +556,6 @@ export class DashboardPageComponent implements OnInit {
     this.authService.logout(true);
   }
 
-  protected async addWaitingPlayer(table: DashboardTable): Promise<void> {
-    const playerName = (this.waitingDrafts[table.id] ?? '').trim();
-
-    if (!playerName) {
-      this.errorMessage = 'Indique le joueur a ajouter.';
-      return;
-    }
-
-    await this.runAction(async () => {
-      await firstValueFrom(this.dashboardApi.addWaitingPlayer(table.id, playerName));
-      this.waitingDrafts[table.id] = '';
-      await this.reloadData(`${playerName} ajoute a la liste d'attente de ${table.name}.`);
-    });
-  }
-
   protected async removeWaitingPlayer(
     table: DashboardTable,
     entry: WaitingPlayerEntry,
@@ -191,9 +564,7 @@ export class DashboardPageComponent implements OnInit {
       await firstValueFrom(
         this.dashboardApi.removeWaitingPlayer(table.id, entry.id),
       );
-      await this.reloadData(
-        `${entry.playerName} retire de la liste d'attente de ${table.name}.`,
-      );
+      await this.reloadData(`${entry.playerName} retire de ${table.name}.`);
     });
   }
 
@@ -204,13 +575,14 @@ export class DashboardPageComponent implements OnInit {
     );
 
     if (!table) {
-      this.errorMessage = 'Selectionne une table libre.';
+      this.errorMessage = 'Choisis une table libre.';
+      this.render();
       return;
     }
 
     if (waitingPlayerNames.length < 2) {
-      this.errorMessage =
-        "Ajoute au moins deux joueurs dans la file d'attente de cette table.";
+      this.errorMessage = 'Il faut au moins deux joueurs sur cette table.';
+      this.render();
       return;
     }
 
@@ -224,20 +596,21 @@ export class DashboardPageComponent implements OnInit {
     );
 
     if (!playerOne || !playerTwo) {
-      this.errorMessage =
-        "Choisis deux joueurs depuis la file d'attente de la table selectionnee.";
+      this.errorMessage = "Choisis les deux joueurs depuis la file d'attente.";
+      this.render();
       return;
     }
 
     if (this.namesMatch(playerOne, playerTwo)) {
-      this.errorMessage = 'Merci de selectionner deux joueurs differents.';
+      this.errorMessage = 'Choisis deux joueurs differents.';
+      this.render();
       return;
     }
 
     await this.runAction(async () => {
       await firstValueFrom(
         this.dashboardApi.startMatch({
-          tableId: this.startForm.tableId,
+          tableId: table.id,
           playerOne,
           playerTwo,
           durationMinutes:
@@ -251,8 +624,8 @@ export class DashboardPageComponent implements OnInit {
       this.startForm.playerOne = '';
       this.startForm.playerTwo = '';
       this.startForm.note = '';
-      await this.reloadData(`Reservation enregistree sur ${table.name}.`);
-      this.activeSection = 'overview';
+      await this.reloadData(`Partie demarree sur ${table.name}.`);
+      this.closeModal();
     });
   }
 
@@ -261,7 +634,8 @@ export class DashboardPageComponent implements OnInit {
     const table = this.selectedFinishTable;
 
     if (!match || !table) {
-      this.errorMessage = 'Choisis un match actif.';
+      this.errorMessage = 'Choisis une partie en cours.';
+      this.render();
       return;
     }
 
@@ -275,8 +649,8 @@ export class DashboardPageComponent implements OnInit {
 
       const winnerName = this.finishForm.winner;
       this.finishForm.note = '';
-      await this.reloadData(`Victoire enregistree pour ${winnerName}.`);
-      this.activeSection = 'performance';
+      await this.reloadData(`${table.name} liberee. Gagnant: ${winnerName}.`);
+      this.closeModal();
     });
   }
 
@@ -287,8 +661,14 @@ export class DashboardPageComponent implements OnInit {
       this.accountForm.username = '';
       this.accountForm.password = '';
       this.accountForm.role = 'admin';
-      await this.reloadData('Compte cree avec succes.');
+      await this.reloadData('Compte cree.');
     });
+  }
+
+  protected selectAccountRole(role: UserRole): void {
+    this.accountForm.role = role;
+    this.clearAlerts();
+    this.render();
   }
 
   protected async toggleAccountStatus(account: UserAccount): Promise<void> {
@@ -309,8 +689,8 @@ export class DashboardPageComponent implements OnInit {
       );
       await this.reloadData(
         nextStatus
-          ? `${account.displayName} peut maintenant se connecter.`
-          : `${account.displayName} a ete desactive.`,
+          ? `${account.displayName} peut se connecter.`
+          : `${account.displayName} est desactive.`,
       );
     });
   }
@@ -331,7 +711,10 @@ export class DashboardPageComponent implements OnInit {
   }
 
   protected handleStartTableChange(): void {
-    if (!this.selectedStartTable || this.selectedStartTable.discipline !== 'Pool anglais') {
+    if (
+      !this.selectedStartTable
+      || this.selectedStartTable.discipline !== 'Pool anglais'
+    ) {
       this.startForm.durationMinutes = 60;
     }
 
@@ -394,9 +777,7 @@ export class DashboardPageComponent implements OnInit {
   private async refreshAccounts(throwOnError: boolean): Promise<void> {
     if (!this.isSudo) {
       this.accounts = [];
-      if (this.activeSection === 'accounts') {
-        this.activeSection = 'overview';
-      }
+      this.render();
       return;
     }
 
@@ -408,29 +789,32 @@ export class DashboardPageComponent implements OnInit {
     } catch (error) {
       this.accounts = [];
 
-      if (this.activeSection === 'accounts') {
-        this.activeSection = 'overview';
-      }
-
       if (throwOnError) {
         throw error;
       }
 
-      this.errorMessage =
-        "Le dashboard est charge, mais la liste des comptes n'a pas repondu.";
+      this.errorMessage = "La partie comptes n'a pas pu etre chargee.";
     }
 
     this.render();
   }
 
   private syncForms(): void {
-    const nextFreeTable = this.freeTables[0] ?? null;
-
-    if (!this.freeTables.some((table) => table.id === this.startForm.tableId)) {
-      this.startForm.tableId = nextFreeTable?.id ?? '';
+    const nextTable = this.tables[0] ?? null;
+    if (!this.tables.some((table) => table.id === this.addPlayerForm.tableId)) {
+      this.addPlayerForm.tableId = nextTable?.id ?? '';
     }
 
-    if (!this.selectedStartTable || this.selectedStartTable.discipline !== 'Pool anglais') {
+    const nextReadyTable = this.tablesReadyToStart[0] ?? null;
+
+    if (!this.tablesReadyToStart.some((table) => table.id === this.startForm.tableId)) {
+      this.startForm.tableId = nextReadyTable?.id ?? '';
+    }
+
+    if (
+      !this.selectedStartTable
+      || this.selectedStartTable.discipline !== 'Pool anglais'
+    ) {
       this.startForm.durationMinutes = 60;
     }
 
@@ -462,7 +846,9 @@ export class DashboardPageComponent implements OnInit {
   }
 
   private syncStartPlayerSelections(
-    preferredSelection: Partial<Pick<typeof this.startForm, 'playerOne' | 'playerTwo'>> = {},
+    preferredSelection: Partial<
+      Pick<typeof this.startForm, 'playerOne' | 'playerTwo'>
+    > = {},
   ): void {
     const queuedPlayers = this.selectedStartWaitingPlayers.map(
       (entry) => entry.playerName,
@@ -544,7 +930,7 @@ export class DashboardPageComponent implements OnInit {
 
 function extractHttpErrorMessage(error: unknown): string {
   if (error instanceof TimeoutError) {
-    return "Le serveur met trop de temps a repondre. Clique sur 'Actualiser les donnees' ou relance l'application.";
+    return "Le serveur met trop de temps a repondre. Clique sur 'Rafraichir' ou relance l'application.";
   }
 
   if (error instanceof HttpErrorResponse) {

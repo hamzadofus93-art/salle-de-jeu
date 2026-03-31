@@ -48,13 +48,11 @@
               />
             </label>
 
-            <label>
-              Role
-              <select id="account-role" name="role">
-                <option value="admin">Admin</option>
-                <option value="sudo">Sudo</option>
-              </select>
-            </label>
+            <div class="stack-field">
+              <span>Role</span>
+              <input id="account-role" name="role" type="hidden" value="admin" />
+              <div id="account-role-options" class="choice-grid choice-grid-compact"></div>
+            </div>
           </div>
 
           <label>

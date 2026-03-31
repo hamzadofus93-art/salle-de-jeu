@@ -12,33 +12,24 @@
     </p>
 
     <form id="start-form" class="stack-form">
-      <label>
-        Table
-        <select id="start-table" name="table" required></select>
-      </label>
+      <div class="stack-field">
+        <span>Table</span>
+        <input id="start-table" name="table" type="hidden" />
+        <div id="start-table-options" class="choice-grid"></div>
+      </div>
 
       <div class="field-grid">
-        <label>
-          Joueur 1
-          <select
-            id="player-one"
-            name="playerOne"
-            required
-          >
-            <option value="">Choisir Joueur 1</option>
-          </select>
-        </label>
+        <div class="stack-field">
+          <span>Joueur 1</span>
+          <input id="player-one" name="playerOne" type="hidden" />
+          <div id="player-one-options" class="choice-grid choice-grid-compact"></div>
+        </div>
 
-        <label>
-          Joueur 2
-          <select
-            id="player-two"
-            name="playerTwo"
-            required
-          >
-            <option value="">Choisir Joueur 2</option>
-          </select>
-        </label>
+        <div class="stack-field">
+          <span>Joueur 2</span>
+          <input id="player-two" name="playerTwo" type="hidden" />
+          <div id="player-two-options" class="choice-grid choice-grid-compact"></div>
+        </div>
       </div>
 
       <div id="reservation-panel" class="reservation-panel" hidden>
@@ -108,10 +99,11 @@
     </div>
 
     <form id="finish-form" class="stack-form" hidden>
-      <label>
-        Table active
-        <select id="finish-table" name="finishTable" required></select>
-      </label>
+      <div class="stack-field">
+        <span>Table active</span>
+        <input id="finish-table" name="finishTable" type="hidden" />
+        <div id="finish-table-options" class="choice-grid"></div>
+      </div>
 
       <div id="active-match-summary" class="match-summary"></div>
 

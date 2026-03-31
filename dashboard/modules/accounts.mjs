@@ -18,6 +18,7 @@ export function renderAdminAccounts() {
 
   const canManageAccounts = userIsSudo();
   setAccountFormAvailability(canManageAccounts);
+  renderAccountRoleChoices(canManageAccounts);
 
   if (!canManageAccounts) {
     elements.accountsSummary.innerHTML = `
@@ -102,6 +103,17 @@ export function handleAccountCreateSubmit(event) {
 
   rerender();
   showToast(`Compte cree pour ${result.account.displayName}.`);
+}
+
+export function handleAccountFormClick(event) {
+  const choiceButton = event.target.closest("button[data-account-role]");
+
+  if (!choiceButton || choiceButton.disabled) {
+    return;
+  }
+
+  appContext.elements.accountRole.value = choiceButton.dataset.accountRole || "admin";
+  renderAccountRoleChoices(userIsSudo());
 }
 
 export function handleAccountListClick(event) {
@@ -269,7 +281,7 @@ function setAccountFormAvailability(available) {
   }
 
   elements.accountForm
-    .querySelectorAll("input, select, button, textarea")
+    .querySelectorAll("input, button, textarea")
     .forEach((field) => {
       field.disabled = !available;
     });
@@ -277,4 +289,47 @@ function setAccountFormAvailability(available) {
 
 function formatAccountRole(role) {
   return role === "sudo" ? "Sudo" : "Admin";
+}
+
+function renderAccountRoleChoices(enabled) {
+  const { elements } = appContext;
+
+  if (!elements.accountRoleOptions || !elements.accountRole) {
+    return;
+  }
+
+  const currentRole = elements.accountRole.value || "admin";
+
+  elements.accountRoleOptions.innerHTML = [
+    createRoleChoiceMarkup({
+      role: "admin",
+      title: "Admin",
+      note: "Usage quotidien",
+      active: currentRole === "admin",
+      disabled: !enabled,
+    }),
+    createRoleChoiceMarkup({
+      role: "sudo",
+      title: "Sudo",
+      note: "Gestion complete",
+      active: currentRole === "sudo",
+      disabled: !enabled,
+    }),
+  ].join("");
+}
+
+function createRoleChoiceMarkup({ role, title, note, active, disabled }) {
+  return `
+    <button
+      type="button"
+      class="choice-button ${active ? "is-active" : ""}"
+      data-account-role="${escapeAttribute(role)}"
+      ${disabled ? "disabled" : ""}
+    >
+      <span class="choice-copy">
+        <strong>${escapeHtml(title)}</strong>
+        <small>${escapeHtml(note)}</small>
+      </span>
+    </button>
+  `;
 }

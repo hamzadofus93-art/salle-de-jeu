@@ -13,13 +13,12 @@ import {
   renderTables,
 } from "./modules/tables.mjs";
 import {
-  focusStartPlayerField,
+  handleFinishFormClick,
   handleFinishSubmit,
+  handleStartFormClick,
   handleStartSubmit,
   renderFinishForm,
   renderStartForm,
-  syncStartFormForTable,
-  updateFinishMatchDetails,
 } from "./modules/matches.mjs";
 import {
   handleResetData,
@@ -28,6 +27,7 @@ import {
 } from "./modules/history.mjs";
 import {
   handleAccountCreateSubmit,
+  handleAccountFormClick,
   handleAccountListClick,
   renderAdminAccounts,
 } from "./modules/accounts.mjs";
@@ -52,15 +52,13 @@ registerRender(render);
 const { elements } = appContext;
 
 elements.startForm?.addEventListener("submit", handleStartSubmit);
-elements.startTable?.addEventListener("change", () => {
-  syncStartFormForTable(elements.startTable.value);
-  focusStartPlayerField();
-});
+elements.startForm?.addEventListener("click", handleStartFormClick);
 elements.finishForm?.addEventListener("submit", handleFinishSubmit);
-elements.finishTable?.addEventListener("change", updateFinishMatchDetails);
+elements.finishForm?.addEventListener("click", handleFinishFormClick);
 elements.resetData?.addEventListener("click", handleResetData);
 elements.logoutButton?.addEventListener("click", handleLogout);
 elements.accountForm?.addEventListener("submit", handleAccountCreateSubmit);
+elements.accountForm?.addEventListener("click", handleAccountFormClick);
 elements.accountsList?.addEventListener("click", handleAccountListClick);
 elements.pageDeck?.addEventListener("click", handleTablesGridClick);
 elements.pageDeck?.addEventListener("submit", handleTablesGridSubmit);
