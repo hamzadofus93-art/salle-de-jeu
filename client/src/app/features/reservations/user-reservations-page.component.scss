@@ -51,6 +51,7 @@
 .reservation-panel,
 .reservation-form,
 .reservation-list,
+.reservation-chip-list,
 .reservation-item,
 .reservation-item-head,
 .reservation-meta,
@@ -187,6 +188,24 @@
   justify-content: end;
   align-items: center;
   gap: 0.65rem;
+}
+
+.reservation-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.reservation-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(180, 44, 32, 0.08);
+  color: var(--phoenix-ink-strong);
+  font-size: 0.84rem;
+  font-weight: 600;
 }
 
 @media (max-width: 991.98px) {

@@ -1,5 +1,5 @@
 import { prisma } from "../db/prisma.mjs";
-import { badRequest, notFound } from "../utils/http-error.mjs";
+import { badRequest, forbidden, notFound } from "../utils/http-error.mjs";
 import { namesMatch, sanitizeText } from "../utils/normalize.mjs";
 import { toPublicTable } from "../utils/serializers.mjs";
 
@@ -22,7 +22,7 @@ export async function listTables() {
   return tables.map(toPublicTable);
 }
 
-export async function addWaitingPlayer(tableId, payload) {
+export async function addWaitingPlayer(tableId, payload, actor = null) {
   const table = await prisma.gameTable.findUnique({
     where: { id: tableId },
     include: tableInclude,
@@ -32,7 +32,7 @@ export async function addWaitingPlayer(tableId, payload) {
     throw notFound("Table introuvable.");
   }
 
-  const playerName = sanitizeText(payload?.playerName, 30);
+  const playerName = resolveWaitingPlayerName(actor, payload);
 
   if (!playerName) {
     throw badRequest("Indique le joueur a ajouter.");
@@ -66,7 +66,7 @@ export async function addWaitingPlayer(tableId, payload) {
   return getTableById(table.id);
 }
 
-export async function removeWaitingPlayer(tableId, entryId) {
+export async function removeWaitingPlayer(tableId, entryId, actor = null) {
   const table = await prisma.gameTable.findUnique({
     where: { id: tableId },
     include: tableInclude,
@@ -80,6 +80,10 @@ export async function removeWaitingPlayer(tableId, entryId) {
 
   if (!entry) {
     throw notFound("Joueur en attente introuvable.");
+  }
+
+  if (!canManageWaitingEntry(actor, entry.playerName)) {
+    throw forbidden("Tu peux retirer uniquement ton propre nom de la file d'attente.");
   }
 
   await prisma.$transaction(async (tx) => {
@@ -116,4 +120,28 @@ export async function getTableById(tableId) {
   }
 
   return toPublicTable(table);
+}
+
+function resolveWaitingPlayerName(actor, payload) {
+  if (isStaff(actor)) {
+    return sanitizeText(payload?.playerName, 30);
+  }
+
+  return sanitizeText(actor?.displayName || actor?.username, 30);
+}
+
+function canManageWaitingEntry(actor, playerName) {
+  if (isStaff(actor)) {
+    return true;
+  }
+
+  return getActorQueueNames(actor).some((name) => namesMatch(name, playerName));
+}
+
+function getActorQueueNames(actor) {
+  return [actor?.displayName, actor?.username].filter(Boolean);
+}
+
+function isStaff(actor) {
+  return ["ADMIN", "SUDO"].includes(actor?.role || "");
 }

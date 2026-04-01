@@ -178,7 +178,7 @@ export class DashboardPageComponent implements OnInit {
 
   protected get addPlayerWaitingNames(): string[] {
     return this.selectedAddPlayerTable?.waitingPlayers.map(
-      (entry) => `#${entry.position} ${entry.playerName}`,
+      (entry) => entry.playerName,
     ) ?? [];
   }
 
@@ -218,7 +218,7 @@ export class DashboardPageComponent implements OnInit {
 
   protected get startTableWaitingNames(): string[] {
     return this.selectedStartWaitingPlayers.map(
-      (entry) => `#${entry.position} ${entry.playerName}`,
+      (entry) => entry.playerName,
     );
   }
 

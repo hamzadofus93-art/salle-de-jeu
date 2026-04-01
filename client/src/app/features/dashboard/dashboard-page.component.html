@@ -366,7 +366,7 @@
                   (click)="selectStartPlayer('playerOne', entry.playerName)"
                 >
                   <span class="shortcut-chip-copy">
-                    <strong>#{{ entry.position }} - {{ entry.playerName }}</strong>
+                    <strong>{{ entry.playerName }}</strong>
                     <small>Depuis la file d'attente</small>
                   </span>
                 </button>
@@ -387,7 +387,7 @@
                   (click)="selectStartPlayer('playerTwo', entry.playerName)"
                 >
                   <span class="shortcut-chip-copy">
-                    <strong>#{{ entry.position }} - {{ entry.playerName }}</strong>
+                    <strong>{{ entry.playerName }}</strong>
                     <small>Depuis la file d'attente</small>
                   </span>
                 </button>
@@ -532,7 +532,7 @@
                     <span>{{ table.discipline }} - {{ waitingLabel(table) }}</span>
                     <div *ngIf="table.waitingPlayers.length; else noQueuedPlayers" class="waiting-inline-list">
                       <span *ngFor="let entry of table.waitingPlayers" class="waiting-inline-chip">
-                        #{{ entry.position }} {{ entry.playerName }}
+                        {{ entry.playerName }}
                       </span>
                     </div>
                     <ng-template #noQueuedPlayers>
