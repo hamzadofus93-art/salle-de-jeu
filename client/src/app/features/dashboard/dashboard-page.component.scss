@@ -93,78 +93,69 @@
   min-height: 12rem;
 }
 
-.action-row {
+.command-panel {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.9rem;
-  margin-bottom: 0;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.2fr);
+  gap: 1rem;
+  align-items: center;
 }
 
-.action-card {
+.command-panel-copy {
   display: grid;
   gap: 0.35rem;
-  text-align: left;
-  min-height: 7.25rem;
-  padding: 0.95rem 1rem;
-  border: 1px solid rgba(42, 37, 33, 0.08);
-  border-radius: 1.3rem;
-  background: rgba(255, 255, 255, 0.75);
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
-    border-color 160ms ease;
 }
 
-.action-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0.9rem 1.6rem rgba(27, 23, 18, 0.08);
-  border-color: rgba(180, 44, 32, 0.16);
+.command-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
 }
 
-.action-card strong {
-  font-size: 1.22rem;
-  color: var(--phoenix-ink-strong);
+.command-panel-actions .btn-lg {
+  min-width: 15rem;
 }
 
-.action-card small,
-.action-label {
-  color: var(--phoenix-ink-soft);
+.dashboard-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: start;
 }
 
-.action-card-primary,
-.action-card-felt,
-.action-card-dark {
-  border-color: transparent;
+.dashboard-section {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  height: fit-content;
 }
 
-.action-card-primary {
-  background: linear-gradient(135deg, rgba(180, 44, 32, 0.98), rgba(146, 33, 24, 0.96));
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: start;
 }
 
-.action-card-primary strong,
-.action-card-primary small,
-.action-card-primary .action-label,
-.action-card-felt strong,
-.action-card-felt small,
-.action-card-felt .action-label,
-.action-card-dark strong,
-.action-card-dark small,
-.action-card-dark .action-label {
-  color: #fff;
-}
-
-.action-card-felt {
-  background: linear-gradient(135deg, rgba(16, 84, 63, 0.98), rgba(11, 58, 44, 0.95));
-}
-
-.action-card-dark {
-  background: linear-gradient(135deg, rgba(42, 37, 33, 0.98), rgba(71, 63, 56, 0.94));
+.section-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(180, 44, 32, 0.08);
+  color: var(--phoenix-red);
+  font-weight: 700;
 }
 
 .shortcut-row,
 .simple-list {
   display: grid;
   gap: 0.7rem;
+  align-content: start;
 }
 
 .shortcut-chip {
@@ -521,17 +512,23 @@
     grid-template-columns: 1fr;
   }
 
+  .command-panel,
+  .dashboard-sections,
+  .topbar-side {
+    grid-template-columns: 1fr;
+  }
+
   .topbar-side {
     min-width: 0;
   }
 
   .modal-head,
-  .admin-account-main {
+  .admin-account-main,
+  .section-head {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .action-row,
   .admin-overview,
   .admin-stats,
   .details-grid,
@@ -542,7 +539,15 @@
 }
 
 @media (max-width: 767.98px) {
-  .action-row,
+  .command-panel-actions {
+    flex-direction: column;
+    justify-content: stretch;
+  }
+
+  .command-panel-actions .btn {
+    width: 100%;
+  }
+
   .admin-overview,
   .admin-stats,
   .details-grid,

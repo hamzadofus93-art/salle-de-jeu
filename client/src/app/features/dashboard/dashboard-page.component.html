@@ -3,7 +3,7 @@
     <div class="container-fluid dashboard-layout">
       <div *ngIf="isLoading" class="panel panel-loading">
         <div class="spinner-border text-danger mb-3" role="status"></div>
-        <p class="mb-0">Chargement de ton espace reservation...</p>
+        <p class="mb-0">Chargement de ton espace client...</p>
       </div>
 
       <app-user-reservations-page *ngIf="!isLoading"></app-user-reservations-page>
@@ -17,7 +17,11 @@
     <header class="topbar">
       <div class="topbar-main">
         <div class="topbar-copy topbar-copy-brand">
+          <p class="eyebrow mb-2">Phoenix Snooker Club</p>
           <h1 class="brand-title mb-0">Phoenix Snooker Club</h1>
+          <p class="topbar-text mb-0">
+            Un seul ecran pour ajouter un joueur, lancer une partie ou cloturer une table.
+          </p>
         </div>
 
         <div class="topbar-stats">
@@ -93,48 +97,163 @@
       <p class="mb-0">Chargement de la salle...</p>
     </div>
 
-    <ng-container *ngIf="dashboardState as state">
-      <section class="action-row">
-        <button class="action-card action-card-primary" type="button" (click)="openAddPlayerModal()">
-          <span class="action-label">Ajout rapide</span>
-          <strong>Ajouter un joueur</strong>
-          <small>{{ totalWaitingPlayers }} joueur(s) en attente</small>
-        </button>
+    <ng-container *ngIf="dashboardState">
+      <section class="panel command-panel">
+        <div class="command-panel-copy">
+          <p class="eyebrow mb-2">Action principale</p>
+          <h2 class="mb-1">{{ mainActionLabel }}</h2>
+          <p class="panel-text mb-0">
+            {{
+              tablesReadyToStart.length
+                ? 'Des tables sont prêtes. Lance rapidement la prochaine partie.'
+                : activeTables.length
+                  ? 'Des parties sont en cours. Termine-les ici quand elles finissent.'
+                  : 'La salle est libre. Commence par ajouter un joueur dans une file.'
+            }}
+          </p>
+        </div>
 
-        <button class="action-card action-card-felt" type="button" (click)="openStartMatchModal()">
-          <span class="action-label">Tables pretes</span>
-          <strong>Demarrer une partie</strong>
-          <small>{{ tablesReadyToStart.length }} table(s) prete(s)</small>
-        </button>
+        <div class="command-panel-actions">
+          <button
+            class="btn btn-danger btn-lg"
+            type="button"
+            (click)="openMainAction()"
+          >
+            {{ mainActionLabel }}
+          </button>
+          <button
+            class="btn btn-outline-dark"
+            type="button"
+            (click)="openAddPlayerModal()"
+          >
+            Ajouter un joueur
+          </button>
+          <button
+            class="btn btn-outline-dark"
+            type="button"
+            (click)="openQueuesModal()"
+          >
+            Voir les files
+          </button>
+          <button
+            class="btn btn-outline-dark"
+            type="button"
+            (click)="openHistoryModal()"
+          >
+            Historique
+          </button>
+          <button
+            *ngIf="isSudo"
+            class="btn btn-outline-dark"
+            type="button"
+            (click)="openAdminModal()"
+          >
+            Comptes
+          </button>
+        </div>
+      </section>
 
-        <button class="action-card action-card-dark" type="button" (click)="openFinishMatchModal()">
-          <span class="action-label">Cloture</span>
-          <strong>Terminer une partie</strong>
-          <small>{{ activeTables.length }} partie(s) en cours</small>
-        </button>
+      <section class="dashboard-sections">
+        <article class="subpanel dashboard-section">
+          <div class="section-head">
+            <div>
+              <h3 class="mb-1">Tables prêtes</h3>
+              <p class="panel-text mb-0">Les prochaines parties a lancer.</p>
+            </div>
+            <span class="section-badge">{{ tablesReadyToStart.length }}</span>
+          </div>
 
-        <button class="action-card" type="button" (click)="openQueuesModal()">
-          <span class="action-label">Vue rapide</span>
-          <strong>Files d'attente</strong>
-          <small>{{ totalWaitingPlayers }} joueur(s) a placer</small>
-        </button>
+          <div *ngIf="tablesReadyToStart.length; else noReadyTables" class="simple-list">
+            <article *ngFor="let table of tablesReadyToStart | slice:0:4" class="simple-item">
+              <strong>{{ table.name }}</strong>
+              <span>{{ table.discipline }} - {{ waitingLabel(table) }}</span>
+              <div class="waiting-inline-list" *ngIf="table.waitingPlayers.length">
+                <span *ngFor="let entry of table.waitingPlayers | slice:0:4" class="waiting-inline-chip">
+                  {{ entry.playerName }}
+                </span>
+              </div>
+              <div class="simple-actions">
+                <button class="btn btn-sm btn-danger" type="button" (click)="openStartMatchModal(table)">
+                  Demarrer
+                </button>
+              </div>
+            </article>
+          </div>
 
-        <button class="action-card" type="button" (click)="openHistoryModal()">
-          <span class="action-label">Suivi</span>
-          <strong>Historique</strong>
-          <small>{{ history.length }} partie(s) recente(s)</small>
-        </button>
+          <ng-template #noReadyTables>
+            <div class="empty-inline">Aucune table n'est prete pour le moment.</div>
+          </ng-template>
+        </article>
 
-        <button
-          *ngIf="isSudo"
-          class="action-card"
-          type="button"
-          (click)="openAdminModal()"
-        >
-          <span class="action-label">Equipe</span>
-          <strong>Administration</strong>
-          <small>{{ accounts.length }} compte(s)</small>
-        </button>
+        <article class="subpanel dashboard-section">
+          <div class="section-head">
+            <div>
+              <h3 class="mb-1">Parties en cours</h3>
+              <p class="panel-text mb-0">Les tables a cloturer ensuite.</p>
+            </div>
+            <span class="section-badge">{{ activeTables.length }}</span>
+          </div>
+
+          <div *ngIf="activeTables.length; else noActiveTables" class="simple-list">
+            <article *ngFor="let table of activeTables | slice:0:4" class="simple-item">
+              <strong>{{ table.name }}</strong>
+              <span>
+                {{ table.currentMatch?.playerOne }} vs {{ table.currentMatch?.playerTwo }}
+              </span>
+              <span>Debut : {{ table.currentMatch?.startedAt | date: 'short' }}</span>
+              <div class="simple-actions">
+                <button class="btn btn-sm btn-outline-dark" type="button" (click)="openFinishMatchModal(table)">
+                  Terminer
+                </button>
+              </div>
+            </article>
+          </div>
+
+          <ng-template #noActiveTables>
+            <div class="empty-inline">Aucune partie en cours.</div>
+          </ng-template>
+        </article>
+
+        <article class="subpanel dashboard-section">
+          <div class="section-head">
+            <div>
+              <h3 class="mb-1">Files d'attente</h3>
+              <p class="panel-text mb-0">Les tables qui demandent de l'attention.</p>
+            </div>
+            <span class="section-badge">{{ totalWaitingPlayers }}</span>
+          </div>
+
+          <div *ngIf="totalWaitingPlayers; else noQueues" class="simple-list">
+            <ng-container *ngFor="let table of queueTables | slice:0:5">
+              <article *ngIf="table.waitingPlayers.length" class="simple-item">
+                <strong>{{ table.name }}</strong>
+                <span>{{ table.discipline }} - {{ waitingLabel(table) }}</span>
+                <div class="waiting-inline-list">
+                  <span *ngFor="let entry of table.waitingPlayers | slice:0:4" class="waiting-inline-chip">
+                    {{ entry.playerName }}
+                  </span>
+                </div>
+                <div class="simple-actions">
+                  <button class="btn btn-sm btn-outline-dark" type="button" (click)="openAddPlayerModal(table)">
+                    Ajouter ici
+                  </button>
+                  <button
+                    *ngIf="table.status === 'free' && table.waitingPlayers.length >= 2"
+                    class="btn btn-sm btn-danger"
+                    type="button"
+                    (click)="openStartMatchModal(table)"
+                  >
+                    Demarrer
+                  </button>
+                </div>
+              </article>
+            </ng-container>
+          </div>
+
+          <ng-template #noQueues>
+            <div class="empty-inline">Aucun joueur en attente actuellement.</div>
+          </ng-template>
+        </article>
       </section>
 
       <div *ngIf="activeModal" class="modal-backdrop" (click)="closeModal()">
@@ -496,6 +615,12 @@
                   {{ table.currentMatch?.playerOne }} vs {{ table.currentMatch?.playerTwo }}
                 </span>
                 <span>Debut : {{ table.currentMatch?.startedAt | date: 'short' }}</span>
+                <span *ngIf="!table.waitingPlayers.length">
+                  Rejouer disponible : aucun joueur en attente sur cette table.
+                </span>
+                <span *ngIf="table.waitingPlayers.length">
+                  Rejouer indisponible : {{ table.waitingPlayers.length }} joueur(s) attendent deja.
+                </span>
               </div>
             </div>
 
@@ -512,6 +637,15 @@
             </div>
 
             <div class="form-actions form-box-wide">
+              <button
+                *ngIf="canReplaySelectedFinishMatch"
+                class="btn btn-outline-dark btn-lg"
+                type="button"
+                [disabled]="!canSubmitFinishMatch"
+                (click)="finishMatch(true)"
+              >
+                Terminer et rejouer
+              </button>
               <button
                 class="btn btn-danger btn-lg"
                 type="submit"
@@ -579,7 +713,7 @@
           </div>
 
           <div *ngIf="activeModal === 'history'" class="modal-stack">
-            <div class="details-grid">
+            <div class="details-grid details-grid-history">
               <section class="subpanel">
                 <h3>Meilleurs joueurs</h3>
                 <div *ngIf="leaderboard.length; else noLeaderboard" class="simple-list">
@@ -593,20 +727,139 @@
                 </ng-template>
               </section>
 
-              <section class="subpanel">
-                <h3>Dernieres parties</h3>
-                <div *ngIf="history.length; else noHistory" class="simple-list">
-                  <article *ngFor="let entry of history | slice:0:8" class="simple-item">
-                    <strong>{{ entry.tableName || 'Table archivee' }}</strong>
-                    <span>
-                      {{ entry.playerOne }} vs {{ entry.playerTwo }} -
-                      {{ entry.winner || 'Sans gagnant' }}
-                    </span>
+              <section class="subpanel subpanel-history">
+                <div class="history-panel-head">
+                  <div>
+                    <h3 class="mb-1">Historique des parties</h3>
+                    <p class="panel-text mb-0">
+                      Filtre par discipline, recherche par nom et parcours les pages.
+                    </p>
+                  </div>
+                  <span class="section-badge">{{ historyTotal }}</span>
+                </div>
+
+                <form class="history-toolbar" (ngSubmit)="submitHistorySearch()">
+                  <div class="history-search-box">
+                    <label class="form-label" for="history-search">Recherche par nom</label>
+                    <input
+                      id="history-search"
+                      name="historySearch"
+                      class="form-control"
+                      type="search"
+                      [(ngModel)]="historyDraft.search"
+                      placeholder="Exemple : ana"
+                      autocomplete="off"
+                    />
+                  </div>
+
+                  <div class="history-filter-group" role="group" aria-label="Filtre discipline">
+                    <button
+                      class="history-filter-chip"
+                      type="button"
+                      [class.history-filter-chip-active]="historyFilters.discipline === 'all'"
+                      (click)="setHistoryDisciplineFilter('all')"
+                    >
+                      Tout
+                    </button>
+                    <button
+                      class="history-filter-chip"
+                      type="button"
+                      [class.history-filter-chip-active]="historyFilters.discipline === 'snooker'"
+                      (click)="setHistoryDisciplineFilter('snooker')"
+                    >
+                      Snooker
+                    </button>
+                    <button
+                      class="history-filter-chip"
+                      type="button"
+                      [class.history-filter-chip-active]="historyFilters.discipline === 'pool'"
+                      (click)="setHistoryDisciplineFilter('pool')"
+                    >
+                      Pool
+                    </button>
+                  </div>
+
+                  <div class="history-toolbar-actions">
+                    <button class="btn btn-outline-dark" type="submit" [disabled]="isHistoryLoading">
+                      Rechercher
+                    </button>
+                    <button
+                      *ngIf="historyDraft.search || historyFilters.search"
+                      class="btn btn-outline-dark"
+                      type="button"
+                      [disabled]="isHistoryLoading"
+                      (click)="clearHistorySearch()"
+                    >
+                      Effacer
+                    </button>
+                  </div>
+                </form>
+
+                <div class="history-results-meta" *ngIf="historyTotal">
+                  <span>{{ historyRangeStart }}-{{ historyRangeEnd }} sur {{ historyTotal }} parties</span>
+                  <span *ngIf="historyFilters.search">Recherche : {{ historyFilters.search }}</span>
+                </div>
+
+                <div *ngIf="isHistoryLoading" class="empty-inline">
+                  Chargement de l'historique...
+                </div>
+
+                <div *ngIf="!isHistoryLoading && historyRows.length; else noHistory" class="simple-list">
+                  <article *ngFor="let entry of historyRows" class="simple-item simple-item-history">
+                    <div class="history-item-head">
+                      <div class="history-item-copy">
+                        <strong>{{ entry.playerOne }} vs {{ entry.playerTwo }}</strong>
+                        <span>{{ entry.tableName || 'Table archivee' }} - {{ entry.discipline }}</span>
+                      </div>
+                      <span class="mini-badge mini-badge-muted">
+                        {{ entry.winner || 'Sans gagnant' }}
+                      </span>
+                    </div>
+
+                    <div class="history-item-meta">
+                      <span>Fin : {{ entry.endedAt | date: 'short' }}</span>
+                      <span>Duree : {{ entry.durationMinutes || 0 }} min</span>
+                      <span *ngIf="entry.format">{{ entry.format }}</span>
+                    </div>
                   </article>
                 </div>
+
                 <ng-template #noHistory>
-                  <div class="empty-inline">Pas encore de parties terminees.</div>
+                  <div *ngIf="!isHistoryLoading" class="empty-inline">{{ historyEmptyMessage }}</div>
                 </ng-template>
+
+                <div *ngIf="historyTotalPages > 1" class="history-pagination">
+                  <button
+                    class="btn btn-sm btn-outline-dark"
+                    type="button"
+                    [disabled]="historyPage === 1 || isHistoryLoading"
+                    (click)="goToHistoryPage(historyPage - 1)"
+                  >
+                    Precedent
+                  </button>
+
+                  <div class="history-page-list">
+                    <button
+                      *ngFor="let page of historyPageNumbers"
+                      class="history-page-chip"
+                      type="button"
+                      [class.history-page-chip-active]="page === historyPage"
+                      [disabled]="isHistoryLoading"
+                      (click)="goToHistoryPage(page)"
+                    >
+                      {{ page }}
+                    </button>
+                  </div>
+
+                  <button
+                    class="btn btn-sm btn-outline-dark"
+                    type="button"
+                    [disabled]="historyPage === historyTotalPages || isHistoryLoading"
+                    (click)="goToHistoryPage(historyPage + 1)"
+                  >
+                    Suivant
+                  </button>
+                </div>
               </section>
             </div>
           </div>

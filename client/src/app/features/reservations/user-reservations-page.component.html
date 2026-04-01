@@ -1,10 +1,10 @@
 <div class="reservation-shell">
   <header class="reservation-topbar">
     <div>
-      <p class="eyebrow mb-2">Phoenix Snooker Club</p>
-      <h1 class="mb-2">Mes reservations</h1>
+      <p class="eyebrow mb-2">Espace client</p>
+      <h1 class="mb-2">Mes files d'attente</h1>
       <p class="reservation-copy mb-0">
-        Choisis une table et ton nom sera ajoute directement dans la file d'attente.
+        Choisis une table pour ajouter ton nom, puis suis simplement ou tu attends deja.
       </p>
     </div>
 
@@ -52,31 +52,14 @@
   </div>
 
   <ng-container *ngIf="!isLoading">
-    <section class="reservation-summary-grid">
-      <article class="reservation-summary-card">
-        <span>Mes tables en attente</span>
-        <strong>{{ myWaitingEntries.length }}</strong>
-      </article>
-
-      <article class="reservation-summary-card">
-        <span>Tables reservables</span>
-        <strong>{{ availableTables.length }}</strong>
-      </article>
-
-      <article class="reservation-summary-card">
-        <span>Noms en attente</span>
-        <strong>{{ totalWaitingPlayers }}</strong>
-      </article>
-    </section>
-
     <section class="reservation-grid">
       <article class="reservation-panel">
         <div class="reservation-panel-head">
           <div>
-            <p class="eyebrow mb-2">Nouvelle reservation</p>
+            <p class="eyebrow mb-2">Ajouter</p>
             <h2 class="mb-1">Ajouter mon nom</h2>
             <p class="reservation-copy mb-0">
-              Selectionne une table. Seul ton nom sera ajoute dans la file d'attente.
+              Choisis une table libre pour y entrer ton nom une seule fois.
             </p>
           </div>
         </div>
@@ -99,7 +82,7 @@
               </option>
             </select>
             <small class="reservation-form-hint">
-              Nom affiche dans la file d'attente : {{ queueDisplayName || 'Compte inconnu' }}
+              Nom utilise : {{ queueDisplayName || 'Compte inconnu' }}
             </small>
           </div>
 
@@ -131,7 +114,7 @@
               *ngIf="isSubmitting"
               class="spinner-border spinner-border-sm me-2"
             ></span>
-            Ajouter mon nom a la file d'attente
+            Ajouter mon nom
           </button>
         </form>
       </article>
@@ -139,10 +122,10 @@
       <article class="reservation-panel">
         <div class="reservation-panel-head">
           <div>
-            <p class="eyebrow mb-2">Mes reservations</p>
-            <h2 class="mb-1">Mes files d'attente</h2>
+            <p class="eyebrow mb-2">Suivi</p>
+            <h2 class="mb-1">Ou j'attends deja</h2>
             <p class="reservation-copy mb-0">
-              Ton nom apparait ici uniquement sur les tables ou il est deja ajoute.
+              Retrouve ici les tables ou ton nom est deja present.
             </p>
           </div>
         </div>

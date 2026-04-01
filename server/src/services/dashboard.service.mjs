@@ -16,7 +16,7 @@ export async function getDashboardState(limit = 8) {
       orderBy: { name: "asc" },
     }),
     getLeaderboard(),
-    getHistory(limit),
+    getHistory({ pageSize: limit }),
   ]);
 
   const publicTables = tables.map(toPublicTable);
@@ -88,25 +88,78 @@ export async function getLeaderboard() {
   };
 }
 
-export async function getHistory(limit = 8) {
-  const nextLimit = Math.max(1, Number.parseInt(String(limit || "8"), 10) || 8);
-  const [total, matches] = await Promise.all([
-    prisma.match.count({
-      where: { status: "FINISHED" },
-    }),
-    prisma.match.findMany({
-      where: { status: "FINISHED" },
-      include: { table: true },
-      orderBy: { endedAt: "desc" },
-      take: nextLimit,
-    }),
-  ]);
+export async function getHistory(options = {}) {
+  const normalizedOptions =
+    typeof options === "object" && options !== null
+      ? options
+      : { pageSize: options };
+
+  const page = parsePositiveInteger(normalizedOptions.page, 1, { max: 9999 });
+  const pageSize = parsePositiveInteger(normalizedOptions.pageSize, 8, { max: 50 });
+  const discipline = normalizeHistoryDiscipline(normalizedOptions.discipline);
+  const search = normalizeSearch(normalizedOptions.search);
+  const where = {
+    status: "FINISHED",
+    ...(discipline ? { discipline } : {}),
+    ...(search
+      ? {
+          OR: [
+            { playerOne: { contains: search } },
+            { playerTwo: { contains: search } },
+            { winnerName: { contains: search } },
+            { table: { name: { contains: search } } },
+          ],
+        }
+      : {}),
+  };
+  const total = await prisma.match.count({ where });
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const matches = await prisma.match.findMany({
+    where,
+    include: { table: true },
+    orderBy: { endedAt: "desc" },
+    skip: (safePage - 1) * pageSize,
+    take: pageSize,
+  });
 
   return {
     total,
+    page: safePage,
+    pageSize,
+    totalPages,
     rows: matches.map((match) => ({
       ...toPublicMatch(match),
       tableName: match.table?.name || null,
     })),
   };
+}
+
+function parsePositiveInteger(value, fallback, { max = 100 } = {}) {
+  const parsedValue = Number.parseInt(String(value || fallback), 10);
+
+  if (!Number.isFinite(parsedValue) || parsedValue < 1) {
+    return fallback;
+  }
+
+  return Math.min(parsedValue, max);
+}
+
+function normalizeHistoryDiscipline(value) {
+  if (value === "snooker") {
+    return "Snooker";
+  }
+
+  if (value === "pool") {
+    return "Pool anglais";
+  }
+
+  return null;
+}
+
+function normalizeSearch(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 50);
 }

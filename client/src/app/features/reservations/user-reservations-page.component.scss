@@ -8,8 +8,7 @@
 }
 
 .reservation-topbar,
-.reservation-panel,
-.reservation-summary-card {
+.reservation-panel {
   border-radius: 1.5rem;
   border: 1px solid rgba(42, 37, 33, 0.08);
   background: rgba(255, 252, 246, 0.94);
@@ -99,30 +98,9 @@
   align-items: start;
 }
 
-.reservation-summary-grid,
 .reservation-grid {
   display: grid;
   gap: 1rem;
-}
-
-.reservation-summary-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.reservation-summary-card {
-  display: grid;
-  gap: 0.2rem;
-  padding: 0.95rem 1rem;
-}
-
-.reservation-summary-card span {
-  color: var(--phoenix-ink-soft);
-  font-size: 0.85rem;
-}
-
-.reservation-summary-card strong {
-  color: var(--phoenix-ink-strong);
-  font-size: 1.45rem;
 }
 
 .reservation-grid {
@@ -210,8 +188,7 @@
 
 @media (max-width: 991.98px) {
   .reservation-topbar,
-  .reservation-grid,
-  .reservation-summary-grid {
+  .reservation-grid {
     grid-template-columns: 1fr;
   }
 

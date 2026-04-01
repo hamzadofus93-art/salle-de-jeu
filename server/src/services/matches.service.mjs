@@ -96,6 +96,7 @@ export async function startMatch(payload) {
 export async function finishMatch(matchId, payload) {
   const winner = sanitizeText(payload?.winner, 30);
   const finishNote = sanitizeText(payload?.note, 120) || null;
+  const replay = payload?.replay === true;
 
   if (!winner) {
     throw badRequest("Choisis le vainqueur de la partie.");
@@ -134,10 +135,22 @@ export async function finishMatch(matchId, payload) {
       },
     });
 
+    if (replay) {
+      const waitingCount = await tx.waitingQueueEntry.count({
+        where: { tableId: match.tableId },
+      });
+
+      if (waitingCount > 0) {
+        throw badRequest(
+          "Impossible de rejouer: des joueurs attendent deja sur cette table.",
+        );
+      }
+    }
+
     await tx.gameTable.update({
       where: { id: match.tableId },
       data: {
-        status: "FREE",
+        status: replay ? "OCCUPIED" : "FREE",
         sessionsCompleted: {
           increment: 1,
         },
@@ -145,6 +158,20 @@ export async function finishMatch(matchId, payload) {
         lastEndedAt: endedAt,
       },
     });
+
+    if (replay) {
+      await tx.match.create({
+        data: {
+          tableId: match.tableId,
+          discipline: match.discipline,
+          format: match.format,
+          note: null,
+          playerOne: match.playerOne,
+          playerTwo: match.playerTwo,
+          status: "ACTIVE",
+        },
+      });
+    }
 
     const updatedTable = await tx.gameTable.findUnique({
       where: { id: match.tableId },

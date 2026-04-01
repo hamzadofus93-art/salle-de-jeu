@@ -1,9 +1,11 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { API_BASE_URL } from '../config/api.config';
 import {
   AccountsResponse,
   DashboardResponse,
+  HistoryDisciplineFilter,
+  HistoryResponse,
   MatchActionResponse,
   ReservationResponse,
   ReservationsResponse,
@@ -17,6 +19,35 @@ export class DashboardApiService {
 
   getDashboardState() {
     return this.http.get<DashboardResponse>(`${API_BASE_URL}/dashboard/state`);
+  }
+
+  getHistory(options?: {
+    page?: number;
+    pageSize?: number;
+    discipline?: HistoryDisciplineFilter;
+    search?: string;
+  }) {
+    let params = new HttpParams();
+
+    if (options?.page) {
+      params = params.set('page', String(options.page));
+    }
+
+    if (options?.pageSize) {
+      params = params.set('pageSize', String(options.pageSize));
+    }
+
+    if (options?.discipline && options.discipline !== 'all') {
+      params = params.set('discipline', options.discipline);
+    }
+
+    if (options?.search?.trim()) {
+      params = params.set('search', options.search.trim());
+    }
+
+    return this.http.get<HistoryResponse>(`${API_BASE_URL}/dashboard/history`, {
+      params,
+    });
   }
 
   getAccounts() {
@@ -113,7 +144,7 @@ export class DashboardApiService {
     );
   }
 
-  finishMatch(matchId: string, payload: { winner: string; note?: string }) {
+  finishMatch(matchId: string, payload: { winner: string; note?: string; replay?: boolean }) {
     return this.http.post<MatchActionResponse>(
       `${API_BASE_URL}/matches/${matchId}/finish`,
       payload,

@@ -15,6 +15,11 @@ export async function leaderboardController(_request, response) {
 }
 
 export async function historyController(request, response) {
-  const history = await getHistory(request.query.limit);
+  const history = await getHistory({
+    page: request.query.page,
+    pageSize: request.query.pageSize ?? request.query.limit,
+    discipline: request.query.discipline,
+    search: request.query.search,
+  });
   response.status(200).json(history);
 }

@@ -7,6 +7,9 @@ import { TimeoutError, firstValueFrom, timeout } from 'rxjs';
 import {
   DashboardState,
   DashboardTable,
+  HistoryDisciplineFilter,
+  HistoryResponse,
+  HistoryRow,
   MatchRecord,
   UserAccount,
   UserRole,
@@ -40,19 +43,33 @@ export class DashboardPageComponent implements OnInit {
   readonly authService = inject(AuthService);
   private readonly dashboardApi = inject(DashboardApiService);
   private isDestroyed = false;
+  private historyRequestSequence = 0;
 
   protected dashboardState: DashboardState | null = null;
   protected accounts: UserAccount[] = [];
   protected isLoading = true;
   protected isRefreshing = false;
+  protected isHistoryLoading = false;
   protected activeModal: DashboardModal = null;
   protected isAddPlayerTableMenuOpen = false;
   protected isStartTableMenuOpen = false;
   protected lockedAddPlayerTableId = '';
   protected lockedStartTableId = '';
   protected lockedFinishMatchId = '';
+  protected historyRows: HistoryRow[] = [];
+  protected historyTotal = 0;
+  protected historyPage = 1;
+  protected historyTotalPages = 1;
   protected errorMessage = '';
   protected successMessage = '';
+  protected readonly historyPageSize = 8;
+  protected readonly historyFilters = {
+    discipline: 'all' as HistoryDisciplineFilter,
+    search: '',
+  };
+  protected readonly historyDraft = {
+    search: '',
+  };
   protected readonly addPlayerForm = {
     tableId: '',
     playerName: '',
@@ -120,6 +137,49 @@ export class DashboardPageComponent implements OnInit {
 
   protected get history() {
     return this.dashboardState?.history ?? [];
+  }
+
+  protected get historyPageNumbers(): number[] {
+    const maxVisiblePages = 5;
+    const startPage = Math.max(1, this.historyPage - 2);
+    const endPage = Math.min(
+      this.historyTotalPages,
+      startPage + maxVisiblePages - 1,
+    );
+    const normalizedStartPage = Math.max(1, endPage - maxVisiblePages + 1);
+
+    return Array.from(
+      { length: endPage - normalizedStartPage + 1 },
+      (_, index) => normalizedStartPage + index,
+    );
+  }
+
+  protected get historyRangeStart(): number {
+    if (!this.historyTotal || !this.historyRows.length) {
+      return 0;
+    }
+
+    return (this.historyPage - 1) * this.historyPageSize + 1;
+  }
+
+  protected get historyRangeEnd(): number {
+    if (!this.historyTotal || !this.historyRows.length) {
+      return 0;
+    }
+
+    return this.historyRangeStart + this.historyRows.length - 1;
+  }
+
+  protected get hasHistoryFilters(): boolean {
+    return this.historyFilters.discipline !== 'all' || !!this.historyFilters.search;
+  }
+
+  protected get historyEmptyMessage(): string {
+    if (this.hasHistoryFilters) {
+      return 'Aucune partie ne correspond a ce filtre.';
+    }
+
+    return 'Pas encore de parties terminees.';
   }
 
   protected get totalWaitingPlayers(): number {
@@ -272,6 +332,10 @@ export class DashboardPageComponent implements OnInit {
     return !!this.selectedFinishMatch && !!this.finishForm.winner;
   }
 
+  protected get canReplaySelectedFinishMatch(): boolean {
+    return !!this.selectedFinishMatch && this.selectedFinishTable?.waitingPlayers.length === 0;
+  }
+
   protected get mainActionLabel(): string {
     if (this.tablesReadyToStart.length) {
       return 'Demarrer une partie';
@@ -367,7 +431,9 @@ export class DashboardPageComponent implements OnInit {
     this.lockedStartTableId = '';
     this.lockedFinishMatchId = '';
     this.activeModal = 'history';
+    this.seedHistoryFromDashboardState();
     this.render();
+    void this.loadHistory();
   }
 
   protected openQueuesModal(): void {
@@ -378,6 +444,47 @@ export class DashboardPageComponent implements OnInit {
     this.lockedFinishMatchId = '';
     this.activeModal = 'queues';
     this.render();
+  }
+
+  protected submitHistorySearch(): void {
+    this.historyFilters.search = this.historyDraft.search.trim();
+    this.historyPage = 1;
+    void this.loadHistory();
+  }
+
+  protected clearHistorySearch(): void {
+    if (!this.historyDraft.search && !this.historyFilters.search) {
+      return;
+    }
+
+    this.historyDraft.search = '';
+    this.historyFilters.search = '';
+    this.historyPage = 1;
+    void this.loadHistory();
+  }
+
+  protected setHistoryDisciplineFilter(filter: HistoryDisciplineFilter): void {
+    if (this.historyFilters.discipline === filter) {
+      return;
+    }
+
+    this.historyFilters.discipline = filter;
+    this.historyPage = 1;
+    void this.loadHistory();
+  }
+
+  protected goToHistoryPage(page: number): void {
+    if (
+      page < 1
+      || page > this.historyTotalPages
+      || page === this.historyPage
+      || this.isHistoryLoading
+    ) {
+      return;
+    }
+
+    this.historyPage = page;
+    void this.loadHistory();
   }
 
   protected openAdminModal(): void {
@@ -638,7 +745,7 @@ export class DashboardPageComponent implements OnInit {
     });
   }
 
-  protected async finishMatch(): Promise<void> {
+  protected async finishMatch(replay = false): Promise<void> {
     const match = this.selectedFinishMatch;
     const table = this.selectedFinishTable;
 
@@ -648,17 +755,28 @@ export class DashboardPageComponent implements OnInit {
       return;
     }
 
+    if (replay && !this.canReplaySelectedFinishMatch) {
+      this.errorMessage = "Rejouer est possible seulement si personne n'attend sur cette table.";
+      this.render();
+      return;
+    }
+
     await this.runAction(async () => {
       await firstValueFrom(
         this.dashboardApi.finishMatch(match.id, {
           winner: this.finishForm.winner,
           note: this.finishForm.note,
+          replay,
         }),
       );
 
       const winnerName = this.finishForm.winner;
       this.finishForm.note = '';
-      await this.reloadData(`${table.name} liberee. Gagnant: ${winnerName}.`);
+      await this.reloadData(
+        replay
+          ? `Partie terminee sur ${table.name}. Rejoue lance entre ${match.playerOne} et ${match.playerTwo}.`
+          : `${table.name} liberee. Gagnant: ${winnerName}.`,
+      );
       this.closeModal();
     });
   }
@@ -784,6 +902,7 @@ export class DashboardPageComponent implements OnInit {
       this.dashboardApi.getDashboardState().pipe(timeout(REQUEST_TIMEOUT_MS)),
     );
     this.dashboardState = dashboardState;
+    this.seedHistoryFromDashboardState();
     this.syncForms();
 
     if (successMessage) {
@@ -816,6 +935,68 @@ export class DashboardPageComponent implements OnInit {
     }
 
     this.render();
+  }
+
+  private seedHistoryFromDashboardState(): void {
+    if (
+      this.historyFilters.discipline !== 'all'
+      || !!this.historyFilters.search
+      || this.historyPage !== 1
+      || this.historyRows.length
+      || !this.dashboardState
+    ) {
+      return;
+    }
+
+    this.historyRows = this.dashboardState.history;
+    this.historyTotal = this.dashboardState.historyTotal;
+    this.historyTotalPages = Math.max(
+      1,
+      Math.ceil(this.historyTotal / this.historyPageSize),
+    );
+  }
+
+  private async loadHistory(): Promise<void> {
+    const requestId = ++this.historyRequestSequence;
+    this.isHistoryLoading = true;
+    this.render();
+
+    try {
+      const historyResponse = await firstValueFrom(
+        this.dashboardApi
+          .getHistory({
+            page: this.historyPage,
+            pageSize: this.historyPageSize,
+            discipline: this.historyFilters.discipline,
+            search: this.historyFilters.search,
+          })
+          .pipe(timeout(REQUEST_TIMEOUT_MS)),
+      );
+
+      if (requestId !== this.historyRequestSequence) {
+        return;
+      }
+
+      this.syncHistoryResponse(historyResponse);
+    } catch (error) {
+      if (requestId !== this.historyRequestSequence) {
+        return;
+      }
+
+      this.handleError(error);
+    } finally {
+      if (requestId === this.historyRequestSequence) {
+        this.isHistoryLoading = false;
+        this.render();
+      }
+    }
+  }
+
+  private syncHistoryResponse(historyResponse: HistoryResponse): void {
+    this.historyRows = historyResponse.rows;
+    this.historyTotal = historyResponse.total;
+    this.historyPage = historyResponse.page;
+    this.historyTotalPages = historyResponse.totalPages;
   }
 
   private syncForms(): void {

@@ -2,6 +2,7 @@ export type UserRole = 'admin' | 'sudo' | 'user';
 export type TableStatus = 'free' | 'occupied';
 export type MatchStatus = 'active' | 'finished';
 export type ReservationStatus = 'upcoming' | 'canceled';
+export type HistoryDisciplineFilter = 'all' | 'snooker' | 'pool';
 
 export interface UserAccount {
   id: string;
@@ -89,6 +90,14 @@ export interface AccountsResponse {
 }
 
 export interface DashboardResponse extends DashboardState {}
+
+export interface HistoryResponse {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  rows: HistoryRow[];
+}
 
 export interface TableResponse {
   table: DashboardTable;
