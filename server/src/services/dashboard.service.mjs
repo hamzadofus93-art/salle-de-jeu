@@ -19,7 +19,14 @@ export async function getDashboardState(limit = 8) {
     getHistory({ pageSize: limit }),
   ]);
 
-  const publicTables = tables.map(toPublicTable);
+  const publicTables = [...tables]
+    .sort((left, right) =>
+      left.name.localeCompare(right.name, "fr", {
+        numeric: true,
+        sensitivity: "base",
+      }),
+    )
+    .map(toPublicTable);
   const freeCount = publicTables.filter((table) => table.status === "free").length;
   const activeCount = publicTables.filter((table) => table.status === "occupied").length;
   const archiveCount = history.total;
@@ -133,6 +140,22 @@ export async function getHistory(options = {}) {
       tableName: match.table?.name || null,
     })),
   };
+}
+
+export async function clearHistoryArchive() {
+  const deletedCount = await prisma.match.count({
+    where: { status: "FINISHED" },
+  });
+
+  if (!deletedCount) {
+    return { deletedCount: 0 };
+  }
+
+  await prisma.match.deleteMany({
+    where: { status: "FINISHED" },
+  });
+
+  return { deletedCount };
 }
 
 function parsePositiveInteger(value, fallback, { max = 100 } = {}) {

@@ -99,6 +99,10 @@ export interface HistoryResponse {
   rows: HistoryRow[];
 }
 
+export interface HistoryClearResponse {
+  deletedCount: number;
+}
+
 export interface TableResponse {
   table: DashboardTable;
 }

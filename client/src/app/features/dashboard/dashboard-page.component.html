@@ -122,21 +122,29 @@
             {{ mainActionLabel }}
           </button>
           <button
-            class="btn btn-outline-dark"
+            class="btn btn-outline-dark command-action-secondary"
+            type="button"
+            (click)="openAddTableModal()"
+          >
+            Ajouter une table
+          </button>
+          <button
+            *ngIf="mainActionLabel !== 'Ajouter un joueur'"
+            class="btn btn-outline-dark command-action-secondary"
             type="button"
             (click)="openAddPlayerModal()"
           >
             Ajouter un joueur
           </button>
           <button
-            class="btn btn-outline-dark"
+            class="btn btn-outline-dark command-action-secondary"
             type="button"
             (click)="openQueuesModal()"
           >
             Voir les files
           </button>
           <button
-            class="btn btn-outline-dark"
+            class="btn btn-outline-dark command-action-secondary"
             type="button"
             (click)="openHistoryModal()"
           >
@@ -144,7 +152,7 @@
           </button>
           <button
             *ngIf="isSudo"
-            class="btn btn-outline-dark"
+            class="btn btn-outline-dark command-action-secondary"
             type="button"
             (click)="openAdminModal()"
           >
@@ -220,7 +228,33 @@
               <h3 class="mb-1">Files d'attente</h3>
               <p class="panel-text mb-0">Les tables qui demandent de l'attention.</p>
             </div>
-            <span class="section-badge">{{ totalWaitingPlayers }}</span>
+            <div class="section-head-actions">
+              <button
+                class="btn btn-sm btn-outline-danger"
+                type="button"
+                [disabled]="!totalWaitingPlayers"
+                (click)="requestResetAllWaitingLists()"
+              >
+                Vider les files
+              </button>
+              <span class="section-badge">{{ totalWaitingPlayers }}</span>
+            </div>
+          </div>
+
+          <div *ngIf="isResetAllWaitingListsWarningVisible" class="modal-flash modal-flash-error" role="alert">
+            <strong>Confirmer la suppression des files d'attente</strong>
+            <p class="mt-2 mb-3">
+              Cette action va retirer {{ totalWaitingPlayers }} joueur(s) sur
+              {{ queuedTablesCount }} table(s). Les parties en cours ne seront pas modifiees.
+            </p>
+            <div class="simple-actions">
+              <button class="btn btn-sm btn-outline-dark" type="button" (click)="cancelResetAllWaitingLists()">
+                Annuler
+              </button>
+              <button class="btn btn-sm btn-danger" type="button" (click)="confirmResetAllWaitingLists()">
+                Vider toutes les files
+              </button>
+            </div>
           </div>
 
           <div *ngIf="totalWaitingPlayers; else noQueues" class="simple-list">
@@ -263,6 +297,12 @@
           (click)="$event.stopPropagation()"
         >
           <div class="modal-head">
+            <div *ngIf="activeModal === 'add-table'">
+              <p class="eyebrow mb-2">Tables</p>
+              <h2 class="mb-1">Ajouter une table</h2>
+              <p class="panel-text mb-0">Choisis la discipline et le numero pour creer une table libre.</p>
+            </div>
+
             <div *ngIf="activeModal === 'add-player'">
               <h2 class="mb-0">Ajouter</h2>
             </div>
@@ -313,6 +353,66 @@
           </div>
 
           <form
+            *ngIf="activeModal === 'add-table'"
+            class="form-grid"
+            (ngSubmit)="submitAddTable()"
+            #addTableFormRef="ngForm"
+          >
+            <div class="form-box">
+              <label for="modal-table-discipline" class="form-label">Discipline</label>
+              <select
+                id="modal-table-discipline"
+                name="modalTableDiscipline"
+                class="form-select"
+                [(ngModel)]="addTableForm.discipline"
+                (ngModelChange)="selectAddTableDiscipline($event)"
+                required
+              >
+                <option value="pool">Pool</option>
+                <option value="snooker">Snooker</option>
+              </select>
+            </div>
+
+            <div class="form-box">
+              <label for="modal-table-number" class="form-label">Numero de table</label>
+              <input
+                id="modal-table-number"
+                name="modalTableNumber"
+                class="form-control"
+                type="number"
+                min="1"
+                step="1"
+                [(ngModel)]="addTableForm.tableNumber"
+                placeholder="Exemple : 7"
+                required
+              />
+            </div>
+
+            <div class="form-box form-box-wide">
+              <div class="resume-box">
+                <strong>{{ addTablePreviewName }}</strong>
+                <span>{{ addTableDisciplineLabel }} - identifiant {{ addTableId }}</span>
+                <span *ngIf="addTableAlreadyExists" class="text-danger">
+                  Cette table existe deja. Choisis un autre numero.
+                </span>
+                <span *ngIf="!addTableAlreadyExists">
+                  La table sera ajoutee comme table libre, prete a recevoir des joueurs.
+                </span>
+              </div>
+            </div>
+
+            <div class="form-actions form-box-wide">
+              <button
+                class="btn btn-danger btn-lg"
+                type="submit"
+                [disabled]="addTableFormRef.invalid || !canSubmitAddTable"
+              >
+                Ajouter la table
+              </button>
+            </div>
+          </form>
+
+          <form
             *ngIf="activeModal === 'add-player'"
             class="form-grid"
             (ngSubmit)="submitAddPlayer()"
@@ -320,6 +420,32 @@
           >
             <div class="form-box form-box-wide" *ngIf="!lockedAddPlayerTableId">
               <label class="form-label">Table</label>
+              <div class="table-filter-row" role="group" aria-label="Filtrer les tables">
+                <button
+                  class="table-filter-chip"
+                  type="button"
+                  [class.table-filter-chip-active]="addPlayerTableFilter === 'all'"
+                  (click)="setAddPlayerTableFilter('all')"
+                >
+                  Toutes
+                </button>
+                <button
+                  class="table-filter-chip"
+                  type="button"
+                  [class.table-filter-chip-active]="addPlayerTableFilter === 'pool'"
+                  (click)="setAddPlayerTableFilter('pool')"
+                >
+                  Pool
+                </button>
+                <button
+                  class="table-filter-chip"
+                  type="button"
+                  [class.table-filter-chip-active]="addPlayerTableFilter === 'snooker'"
+                  (click)="setAddPlayerTableFilter('snooker')"
+                >
+                  Snooker
+                </button>
+              </div>
               <div class="select-shell">
                 <button
                   class="select-trigger"
@@ -335,8 +461,11 @@
                 </button>
 
                 <div *ngIf="isAddPlayerTableMenuOpen" class="select-menu">
+                  <div *ngIf="!filteredAddPlayerTables.length" class="select-menu-empty">
+                    Aucune table pour ce filtre.
+                  </div>
                   <button
-                    *ngFor="let table of tables"
+                    *ngFor="let table of filteredAddPlayerTables"
                     class="select-option"
                     type="button"
                     [class.select-option-active]="addPlayerForm.tableId === table.id"
@@ -416,6 +545,32 @@
           >
             <div class="form-box form-box-wide" *ngIf="!lockedStartTableId">
               <label class="form-label">Table prete</label>
+              <div class="table-filter-row" role="group" aria-label="Filtrer les tables pretes">
+                <button
+                  class="table-filter-chip"
+                  type="button"
+                  [class.table-filter-chip-active]="startTableFilter === 'all'"
+                  (click)="setStartTableFilter('all')"
+                >
+                  Toutes
+                </button>
+                <button
+                  class="table-filter-chip"
+                  type="button"
+                  [class.table-filter-chip-active]="startTableFilter === 'pool'"
+                  (click)="setStartTableFilter('pool')"
+                >
+                  Pool
+                </button>
+                <button
+                  class="table-filter-chip"
+                  type="button"
+                  [class.table-filter-chip-active]="startTableFilter === 'snooker'"
+                  (click)="setStartTableFilter('snooker')"
+                >
+                  Snooker
+                </button>
+              </div>
               <div class="select-shell">
                 <button
                   class="select-trigger"
@@ -431,8 +586,11 @@
                 </button>
 
                 <div *ngIf="isStartTableMenuOpen" class="select-menu">
+                  <div *ngIf="!filteredStartTables.length" class="select-menu-empty">
+                    Aucune table prete pour ce filtre.
+                  </div>
                   <button
-                    *ngFor="let table of tablesReadyToStart"
+                    *ngFor="let table of filteredStartTables"
                     class="select-option"
                     type="button"
                     [class.select-option-active]="startForm.tableId === table.id"
@@ -735,7 +893,18 @@
                       Filtre par discipline, recherche par nom et parcours les pages.
                     </p>
                   </div>
-                  <span class="section-badge">{{ historyTotal }}</span>
+                  <div class="section-head-actions">
+                    <button
+                      *ngIf="isSudo"
+                      class="btn btn-sm btn-outline-danger"
+                      type="button"
+                      [disabled]="!historyArchiveCount || isHistoryLoading"
+                      (click)="requestClearHistory()"
+                    >
+                      Vider l'historique
+                    </button>
+                    <span class="section-badge">{{ historyTotal }}</span>
+                  </div>
                 </div>
 
                 <form class="history-toolbar" (ngSubmit)="submitHistorySearch()">
@@ -794,6 +963,22 @@
                     </button>
                   </div>
                 </form>
+
+                <div *ngIf="isClearHistoryWarningVisible" class="modal-flash modal-flash-error" role="alert">
+                  <strong>Confirmer la suppression de l'historique</strong>
+                  <p class="mt-2 mb-3">
+                    Cette action va supprimer {{ historyArchiveCount }} partie(s) archivee(s).
+                    Les parties en cours et les files d'attente ne seront pas modifiees.
+                  </p>
+                  <div class="simple-actions">
+                    <button class="btn btn-sm btn-outline-dark" type="button" (click)="cancelClearHistory()">
+                      Annuler
+                    </button>
+                    <button class="btn btn-sm btn-danger" type="button" (click)="confirmClearHistory()">
+                      Vider l'historique
+                    </button>
+                  </div>
+                </div>
 
                 <div class="history-results-meta" *ngIf="historyTotal">
                   <span>{{ historyRangeStart }}-{{ historyRangeEnd }} sur {{ historyTotal }} parties</span>

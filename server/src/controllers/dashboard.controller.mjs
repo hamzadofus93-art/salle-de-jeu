@@ -1,4 +1,5 @@
 import {
+  clearHistoryArchive,
   getDashboardState,
   getHistory,
   getLeaderboard,
@@ -22,4 +23,9 @@ export async function historyController(request, response) {
     search: request.query.search,
   });
   response.status(200).json(history);
+}
+
+export async function clearHistoryController(_request, response) {
+  const result = await clearHistoryArchive();
+  response.status(200).json(result);
 }

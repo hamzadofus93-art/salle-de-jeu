@@ -19,7 +19,42 @@ export async function listTables() {
     orderBy: { name: "asc" },
   });
 
-  return tables.map(toPublicTable);
+  return [...tables]
+    .sort((left, right) =>
+      left.name.localeCompare(right.name, "fr", {
+        numeric: true,
+        sensitivity: "base",
+      }),
+    )
+    .map(toPublicTable);
+}
+
+export async function createTable(payload) {
+  const discipline = normalizeTableDiscipline(payload?.discipline);
+  const tableNumber = normalizeTableNumber(payload?.tableNumber);
+
+  if (!discipline) {
+    throw badRequest("Choisis Pool ou Snooker.");
+  }
+
+  if (!tableNumber) {
+    throw badRequest("Indique un numero de table valide.");
+  }
+
+  const tableData = buildTableData(discipline, tableNumber);
+  const existingTable = await prisma.gameTable.findUnique({
+    where: { id: tableData.id },
+  });
+
+  if (existingTable) {
+    throw badRequest("Cette table existe deja.");
+  }
+
+  await prisma.gameTable.create({
+    data: tableData,
+  });
+
+  return getTableById(tableData.id);
 }
 
 export async function addWaitingPlayer(tableId, payload, actor = null) {
@@ -109,6 +144,18 @@ export async function removeWaitingPlayer(tableId, entryId, actor = null) {
   return getTableById(table.id);
 }
 
+export async function resetAllWaitingLists() {
+  const clearedCount = await prisma.waitingQueueEntry.count();
+
+  if (!clearedCount) {
+    return { clearedCount: 0 };
+  }
+
+  await prisma.waitingQueueEntry.deleteMany({});
+
+  return { clearedCount };
+}
+
 export async function getTableById(tableId) {
   const table = await prisma.gameTable.findUnique({
     where: { id: tableId },
@@ -144,4 +191,48 @@ function getActorQueueNames(actor) {
 
 function isStaff(actor) {
   return ["ADMIN", "SUDO"].includes(actor?.role || "");
+}
+
+function normalizeTableDiscipline(value) {
+  const normalizedValue = sanitizeText(value, 20).toLowerCase();
+
+  if (normalizedValue === "pool" || normalizedValue === "pool anglais") {
+    return "pool";
+  }
+
+  if (normalizedValue === "snooker") {
+    return "snooker";
+  }
+
+  return "";
+}
+
+function normalizeTableNumber(value) {
+  const parsedValue = Number.parseInt(String(value || ""), 10);
+
+  if (!Number.isInteger(parsedValue) || parsedValue < 1 || parsedValue > 999) {
+    return 0;
+  }
+
+  return parsedValue;
+}
+
+function buildTableData(discipline, tableNumber) {
+  if (discipline === "pool") {
+    return {
+      id: `pool-${tableNumber}`,
+      name: `Phoenix Pool ${tableNumber}`,
+      discipline: "Pool anglais",
+      shortDiscipline: "Pool",
+      status: "FREE",
+    };
+  }
+
+  return {
+    id: `snooker-${tableNumber}`,
+    name: `Phoenix Snooker ${tableNumber}`,
+    discipline: "Snooker",
+    shortDiscipline: "Snooker",
+    status: "FREE",
+  };
 }

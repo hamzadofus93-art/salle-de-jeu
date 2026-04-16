@@ -20,7 +20,10 @@ import { DashboardApiService } from '../../core/services/dashboard-api.service';
 import { UserReservationsPageComponent } from '../reservations/user-reservations-page.component';
 
 const REQUEST_TIMEOUT_MS = 8000;
+type NewTableDiscipline = 'pool' | 'snooker';
+type TablePickerFilter = 'all' | 'pool' | 'snooker';
 type DashboardModal =
+  | 'add-table'
   | 'add-player'
   | 'start-match'
   | 'finish-match'
@@ -60,6 +63,8 @@ export class DashboardPageComponent implements OnInit {
   protected historyTotal = 0;
   protected historyPage = 1;
   protected historyTotalPages = 1;
+  protected isResetAllWaitingListsWarningVisible = false;
+  protected isClearHistoryWarningVisible = false;
   protected errorMessage = '';
   protected successMessage = '';
   protected readonly historyPageSize = 8;
@@ -70,9 +75,15 @@ export class DashboardPageComponent implements OnInit {
   protected readonly historyDraft = {
     search: '',
   };
+  protected addPlayerTableFilter: TablePickerFilter = 'all';
+  protected startTableFilter: TablePickerFilter = 'all';
   protected readonly addPlayerForm = {
     tableId: '',
     playerName: '',
+  };
+  protected readonly addTableForm = {
+    discipline: 'pool' as NewTableDiscipline,
+    tableNumber: 1 as number | null,
   };
   protected readonly startForm = {
     tableId: '',
@@ -182,11 +193,19 @@ export class DashboardPageComponent implements OnInit {
     return 'Pas encore de parties terminees.';
   }
 
+  protected get historyArchiveCount(): number {
+    return this.summary?.archiveCount ?? this.dashboardState?.historyTotal ?? this.historyTotal;
+  }
+
   protected get totalWaitingPlayers(): number {
     return this.tables.reduce(
       (total, table) => total + table.waitingPlayers.length,
       0,
     );
+  }
+
+  protected get queuedTablesCount(): number {
+    return this.tables.filter((table) => table.waitingPlayers.length > 0).length;
   }
 
   protected get tablesReadyToStart(): DashboardTable[] {
@@ -202,12 +221,58 @@ export class DashboardPageComponent implements OnInit {
         return waitingDifference;
       }
 
-      return left.name.localeCompare(right.name, 'fr');
+      return left.name.localeCompare(right.name, 'fr', {
+        numeric: true,
+        sensitivity: 'base',
+      });
     });
   }
 
   protected get selectedAddPlayerTable(): DashboardTable | null {
     return this.tables.find((table) => table.id === this.addPlayerForm.tableId) ?? null;
+  }
+
+  protected get filteredAddPlayerTables(): DashboardTable[] {
+    return this.filterTablesByDiscipline(this.tables, this.addPlayerTableFilter);
+  }
+
+  protected get normalizedAddTableNumber(): number {
+    const parsedNumber = Number(this.addTableForm.tableNumber);
+
+    if (!Number.isInteger(parsedNumber) || parsedNumber < 1) {
+      return 0;
+    }
+
+    return parsedNumber;
+  }
+
+  protected get addTableDisciplineLabel(): string {
+    return this.addTableForm.discipline === 'pool' ? 'Pool anglais' : 'Snooker';
+  }
+
+  protected get addTableId(): string {
+    const tableNumber = this.normalizedAddTableNumber || '...';
+
+    return `${this.addTableForm.discipline}-${tableNumber}`;
+  }
+
+  protected get addTablePreviewName(): string {
+    const numberLabel = this.normalizedAddTableNumber || '...';
+    const prefix = this.addTableForm.discipline === 'pool' ? 'Pool' : 'Snooker';
+
+    return `Phoenix ${prefix} ${numberLabel}`;
+  }
+
+  protected get addTableAlreadyExists(): boolean {
+    if (!this.normalizedAddTableNumber) {
+      return false;
+    }
+
+    return this.tables.some((table) => table.id === this.addTableId);
+  }
+
+  protected get canSubmitAddTable(): boolean {
+    return this.normalizedAddTableNumber > 0 && !this.addTableAlreadyExists;
   }
 
   protected get addPlayerActionLabel(): string {
@@ -262,6 +327,10 @@ export class DashboardPageComponent implements OnInit {
 
   protected get selectedStartTable(): DashboardTable | null {
     return this.tablesReadyToStart.find((table) => table.id === this.startForm.tableId) ?? null;
+  }
+
+  protected get filteredStartTables(): DashboardTable[] {
+    return this.filterTablesByDiscipline(this.tablesReadyToStart, this.startTableFilter);
   }
 
   protected get selectedStartWaitingPlayers(): WaitingPlayerEntry[] {
@@ -396,6 +465,42 @@ export class DashboardPageComponent implements OnInit {
     return `${table.waitingPlayers.length} joueurs en attente`;
   }
 
+  protected setAddPlayerTableFilter(filter: TablePickerFilter): void {
+    if (this.addPlayerTableFilter === filter) {
+      return;
+    }
+
+    this.addPlayerTableFilter = filter;
+
+    if (
+      this.selectedAddPlayerTable
+      && !this.filteredAddPlayerTables.some((table) => table.id === this.selectedAddPlayerTable?.id)
+    ) {
+      this.addPlayerForm.tableId = this.filteredAddPlayerTables[0]?.id ?? '';
+    }
+
+    this.render();
+  }
+
+  protected setStartTableFilter(filter: TablePickerFilter): void {
+    if (this.startTableFilter === filter) {
+      return;
+    }
+
+    this.startTableFilter = filter;
+
+    if (
+      this.selectedStartTable
+      && !this.filteredStartTables.some((table) => table.id === this.selectedStartTable?.id)
+    ) {
+      this.startForm.tableId = this.filteredStartTables[0]?.id ?? '';
+      this.handleStartTableChange();
+      return;
+    }
+
+    this.render();
+  }
+
   protected formatMatchDuration(match: MatchRecord | null | undefined): string {
     return match?.durationMinutes ? `${match.durationMinutes} min` : 'Libre';
   }
@@ -407,6 +512,7 @@ export class DashboardPageComponent implements OnInit {
     this.lockedAddPlayerTableId = '';
     this.lockedStartTableId = '';
     this.lockedFinishMatchId = '';
+    this.isClearHistoryWarningVisible = false;
     this.render();
   }
 
@@ -436,6 +542,20 @@ export class DashboardPageComponent implements OnInit {
     void this.loadHistory();
   }
 
+  protected openAddTableModal(): void {
+    this.isAddPlayerTableMenuOpen = false;
+    this.isStartTableMenuOpen = false;
+    this.lockedAddPlayerTableId = '';
+    this.lockedStartTableId = '';
+    this.lockedFinishMatchId = '';
+    this.addTableForm.tableNumber = this.getNextSuggestedTableNumber(
+      this.addTableForm.discipline,
+    );
+    this.activeModal = 'add-table';
+    this.clearAlerts();
+    this.render();
+  }
+
   protected openQueuesModal(): void {
     this.isAddPlayerTableMenuOpen = false;
     this.isStartTableMenuOpen = false;
@@ -443,6 +563,17 @@ export class DashboardPageComponent implements OnInit {
     this.lockedStartTableId = '';
     this.lockedFinishMatchId = '';
     this.activeModal = 'queues';
+    this.render();
+  }
+
+  protected selectAddTableDiscipline(discipline: NewTableDiscipline): void {
+    if (discipline !== 'pool' && discipline !== 'snooker') {
+      return;
+    }
+
+    this.addTableForm.discipline = discipline;
+    this.addTableForm.tableNumber = this.getNextSuggestedTableNumber(discipline);
+    this.clearAlerts();
     this.render();
   }
 
@@ -487,6 +618,49 @@ export class DashboardPageComponent implements OnInit {
     void this.loadHistory();
   }
 
+  protected requestClearHistory(): void {
+    if (!this.isSudo || !this.historyArchiveCount) {
+      return;
+    }
+
+    this.clearAlerts();
+    this.isClearHistoryWarningVisible = true;
+    this.render();
+  }
+
+  protected cancelClearHistory(): void {
+    if (!this.isClearHistoryWarningVisible) {
+      return;
+    }
+
+    this.isClearHistoryWarningVisible = false;
+    this.render();
+  }
+
+  protected async confirmClearHistory(): Promise<void> {
+    if (!this.isSudo) {
+      return;
+    }
+
+    if (!this.historyArchiveCount) {
+      this.isClearHistoryWarningVisible = false;
+      this.render();
+      return;
+    }
+
+    await this.runAction(async () => {
+      const result = await firstValueFrom(
+        this.dashboardApi.clearHistory().pipe(timeout(REQUEST_TIMEOUT_MS)),
+      );
+      this.isClearHistoryWarningVisible = false;
+      this.historyPage = 1;
+      this.historyRows = [];
+      this.historyTotal = 0;
+      this.historyTotalPages = 1;
+      await this.reloadData(`${result.deletedCount} partie(s) archivee(s) supprimee(s).`);
+    });
+  }
+
   protected openAdminModal(): void {
     if (!this.isSudo) {
       return;
@@ -508,6 +682,7 @@ export class DashboardPageComponent implements OnInit {
     this.lockedAddPlayerTableId = table?.id ?? '';
     this.lockedStartTableId = '';
     this.lockedFinishMatchId = '';
+    this.addPlayerTableFilter = 'all';
     this.addPlayerForm.tableId = preferredTable?.id ?? '';
     this.addPlayerForm.playerName = '';
     this.activeModal = 'add-player';
@@ -585,6 +760,7 @@ export class DashboardPageComponent implements OnInit {
           ? this.tablesReadyToStart[0]?.id ?? ''
           : '';
     this.lockedFinishMatchId = '';
+    this.startTableFilter = 'all';
     this.startForm.tableId = preferredTable?.id ?? '';
     this.handleStartTableChange();
     this.activeModal = 'start-match';
@@ -664,7 +840,42 @@ export class DashboardPageComponent implements OnInit {
     });
   }
 
+  protected async submitAddTable(): Promise<void> {
+    const discipline = this.addTableForm.discipline;
+    const tableNumber = this.normalizedAddTableNumber;
+    const tableName = this.buildTableName(discipline, tableNumber);
+
+    if (!tableNumber) {
+      this.errorMessage = 'Indique un numero de table valide.';
+      this.render();
+      return;
+    }
+
+    if (this.addTableAlreadyExists) {
+      this.errorMessage = 'Cette table existe deja.';
+      this.render();
+      return;
+    }
+
+    await this.runAction(async () => {
+      await firstValueFrom(
+        this.dashboardApi.createTable({
+          discipline,
+          tableNumber,
+        }),
+      );
+
+      await this.reloadData(`${tableName} ajoutee.`);
+      this.addTableForm.discipline = discipline;
+      this.addTableForm.tableNumber = this.getNextSuggestedTableNumber(discipline);
+      this.activeModal = 'add-table';
+      this.render();
+    });
+  }
+
   protected async refresh(): Promise<void> {
+    this.isResetAllWaitingListsWarningVisible = false;
+    this.isClearHistoryWarningVisible = false;
     await this.loadDashboard(true);
   }
 
@@ -681,6 +892,41 @@ export class DashboardPageComponent implements OnInit {
         this.dashboardApi.removeWaitingPlayer(table.id, entry.id),
       );
       await this.reloadData(`${entry.playerName} retire de ${table.name}.`);
+    });
+  }
+
+  protected requestResetAllWaitingLists(): void {
+    if (!this.totalWaitingPlayers) {
+      return;
+    }
+
+    this.clearAlerts();
+    this.isResetAllWaitingListsWarningVisible = true;
+    this.render();
+  }
+
+  protected cancelResetAllWaitingLists(): void {
+    if (!this.isResetAllWaitingListsWarningVisible) {
+      return;
+    }
+
+    this.isResetAllWaitingListsWarningVisible = false;
+    this.render();
+  }
+
+  protected async confirmResetAllWaitingLists(): Promise<void> {
+    if (!this.totalWaitingPlayers) {
+      this.isResetAllWaitingListsWarningVisible = false;
+      this.render();
+      return;
+    }
+
+    await this.runAction(async () => {
+      const result = await firstValueFrom(this.dashboardApi.resetAllWaitingLists());
+      this.isResetAllWaitingListsWarningVisible = false;
+      await this.reloadData(
+        `${result.clearedCount} joueur(s) retires de toutes les files d attente.`,
+      );
     });
   }
 
@@ -902,6 +1148,8 @@ export class DashboardPageComponent implements OnInit {
       this.dashboardApi.getDashboardState().pipe(timeout(REQUEST_TIMEOUT_MS)),
     );
     this.dashboardState = dashboardState;
+    this.isResetAllWaitingListsWarningVisible = false;
+    this.isClearHistoryWarningVisible = false;
     this.seedHistoryFromDashboardState();
     this.syncForms();
 
@@ -1082,6 +1330,48 @@ export class DashboardPageComponent implements OnInit {
 
   private findMatchingQueuedPlayer(players: string[], candidate: string): string {
     return players.find((playerName) => this.namesMatch(playerName, candidate)) ?? '';
+  }
+
+  private buildTableName(discipline: NewTableDiscipline, tableNumber: number): string {
+    const prefix = discipline === 'pool' ? 'Pool' : 'Snooker';
+
+    return `Phoenix ${prefix} ${tableNumber}`;
+  }
+
+  private getNextSuggestedTableNumber(discipline: NewTableDiscipline): number {
+    const matchingNumbers = this.tables
+      .filter((table) => this.matchesTableDiscipline(table, discipline))
+      .map((table) => this.extractTrailingNumber(table.id) || this.extractTrailingNumber(table.name));
+
+    return Math.max(0, ...matchingNumbers) + 1;
+  }
+
+  private filterTablesByDiscipline(
+    tables: DashboardTable[],
+    discipline: TablePickerFilter,
+  ): DashboardTable[] {
+    if (discipline === 'all') {
+      return tables;
+    }
+
+    return tables.filter((table) => this.matchesTableDiscipline(table, discipline));
+  }
+
+  private matchesTableDiscipline(
+    table: DashboardTable,
+    discipline: NewTableDiscipline | TablePickerFilter,
+  ): boolean {
+    if (discipline === 'pool') {
+      return table.discipline === 'Pool anglais' || table.shortDiscipline === 'Pool';
+    }
+
+    return table.discipline === 'Snooker' || table.shortDiscipline === 'Snooker';
+  }
+
+  private extractTrailingNumber(value: string | null | undefined): number {
+    const match = String(value || '').match(/(\d+)(?!.*\d)/);
+
+    return match ? Number(match[1]) : 0;
   }
 
   private namesMatch(left: string, right: string): boolean {

@@ -50,6 +50,7 @@ Quand le build Angular existe dans `../client/dist/client/browser`, Express sert
 - `PATCH /api/accounts/:accountId/status`
 - `DELETE /api/accounts/:accountId`
 - `GET /api/tables`
+- `POST /api/tables`
 - `POST /api/tables/:tableId/waiting-list`
 - `DELETE /api/tables/:tableId/waiting-list/:entryId`
 - `POST /api/matches/start`

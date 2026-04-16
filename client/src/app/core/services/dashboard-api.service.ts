@@ -4,6 +4,7 @@ import { API_BASE_URL } from '../config/api.config';
 import {
   AccountsResponse,
   DashboardResponse,
+  HistoryClearResponse,
   HistoryDisciplineFilter,
   HistoryResponse,
   MatchActionResponse,
@@ -48,6 +49,10 @@ export class DashboardApiService {
     return this.http.get<HistoryResponse>(`${API_BASE_URL}/dashboard/history`, {
       params,
     });
+  }
+
+  clearHistory() {
+    return this.http.delete<HistoryClearResponse>(`${API_BASE_URL}/dashboard/history`);
   }
 
   getAccounts() {
@@ -125,10 +130,18 @@ export class DashboardApiService {
     );
   }
 
+  createTable(payload: { discipline: 'pool' | 'snooker'; tableNumber: number }) {
+    return this.http.post<TableResponse>(`${API_BASE_URL}/tables`, payload);
+  }
+
   removeWaitingPlayer(tableId: string, entryId: string) {
     return this.http.delete<TableResponse>(
       `${API_BASE_URL}/tables/${tableId}/waiting-list/${entryId}`,
     );
+  }
+
+  resetAllWaitingLists() {
+    return this.http.delete<{ clearedCount: number }>(`${API_BASE_URL}/tables/waiting-list`);
   }
 
   startMatch(payload: {

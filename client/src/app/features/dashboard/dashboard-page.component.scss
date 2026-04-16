@@ -138,6 +138,14 @@
   align-items: start;
 }
 
+.section-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .section-badge {
   display: inline-flex;
   align-items: center;
