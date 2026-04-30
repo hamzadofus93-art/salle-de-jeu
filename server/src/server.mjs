@@ -1,6 +1,15 @@
-import { createApp } from "./app.mjs";
-import { env } from "./config/env.mjs";
-import { prisma } from "./db/prisma.mjs";
+import { prepareRuntimeEnvironment } from "./bootstrap/runtime-environment.mjs";
+
+await prepareRuntimeEnvironment();
+
+const [{ createApp }, { env }, { prisma }, { ensureRuntimeSeed }] = await Promise.all([
+  import("./app.mjs"),
+  import("./config/env.mjs"),
+  import("./db/prisma.mjs"),
+  import("./bootstrap/runtime-seed.mjs"),
+]);
+
+await ensureRuntimeSeed();
 
 const app = createApp();
 

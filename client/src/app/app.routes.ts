@@ -17,6 +17,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'files-attente',
+    loadComponent: () =>
+      import('./features/public/public-queues-page.component').then(
+        (module) => module.PublicQueuesPageComponent,
+      ),
+  },
+  {
     path: 'dashboard',
     canActivate: [authGuard],
     loadComponent: () =>

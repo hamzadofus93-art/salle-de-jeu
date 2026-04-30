@@ -11,6 +11,7 @@ import { asyncHandler } from "../utils/async-handler.mjs";
 
 const router = Router();
 
+router.get("/public", asyncHandler(listTablesController));
 router.use(requireAuth);
 router.get("/", asyncHandler(listTablesController));
 router.post("/", requireStaff, asyncHandler(createTableController));

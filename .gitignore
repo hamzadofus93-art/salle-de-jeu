@@ -1,5 +1,11 @@
+node_modules/
+.vercel/
 .edge-codex-profile/
 server-run.err.log
 server-run.out.log
 server-start.err.log
 server-start.out.log
+server-history-route.err.log
+server-history-route.out.log
+server-reset-test.err.log
+server-reset-test.out.log

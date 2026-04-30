@@ -63,6 +63,10 @@ export class DashboardApiService {
     return this.http.get<TablesResponse>(`${API_BASE_URL}/tables`);
   }
 
+  getPublicTables() {
+    return this.http.get<TablesResponse>(`${API_BASE_URL}/tables/public`);
+  }
+
   getReservations() {
     return this.http.get<ReservationsResponse>(`${API_BASE_URL}/reservations`);
   }

@@ -1,0 +1,74 @@
+<div class="dashboard-shell">
+  <div class="container-fluid dashboard-layout">
+    <header class="topbar">
+      <div class="topbar-main">
+        <div class="topbar-copy topbar-copy-brand">
+          <p class="eyebrow mb-2">Phoenix Snooker Club</p>
+          <h1 class="brand-title mb-0">Files d'attente</h1>
+          <p class="topbar-text mb-0">
+            Vue publique et en lecture seule.
+          </p>
+        </div>
+      </div>
+
+      <div class="topbar-side">
+        <div class="topbar-control-grid">
+          <button
+            class="utility-chip"
+            type="button"
+            (click)="refresh()"
+            [disabled]="isLoading || isRefreshing"
+          >
+            <span
+              *ngIf="isRefreshing"
+              class="spinner-border spinner-border-sm me-2"
+            ></span>
+            Rafraichir
+          </button>
+          <a class="utility-chip utility-chip-danger" href="/login">
+            Retour connexion
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <div
+      *ngIf="errorMessage"
+      class="alert alert-danger mb-4"
+      role="alert"
+      aria-live="polite"
+    >
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="isLoading" class="panel panel-loading">
+      <div class="spinner-border text-danger mb-3" role="status"></div>
+      <p class="mb-0">Chargement des files d'attente...</p>
+    </div>
+
+    <ng-container *ngIf="!isLoading">
+      <section class="panel queues-panel">
+        <div *ngIf="tablesWithWaiting.length; else noQueues" class="simple-list">
+          <article *ngFor="let table of tablesWithWaiting" class="simple-item queue-item">
+            <div class="queue-item-head">
+              <div class="queue-item-copy">
+                <strong>{{ table.name }}</strong>
+                <span>{{ waitingLabel(table) }}</span>
+              </div>
+            </div>
+
+            <div class="waiting-inline-list">
+              <span *ngFor="let entry of table.waitingPlayers" class="waiting-inline-chip">
+                {{ entry.position }}. {{ entry.playerName }}
+              </span>
+            </div>
+          </article>
+        </div>
+
+        <ng-template #noQueues>
+          <div class="empty-inline">Aucun joueur en attente pour le moment.</div>
+        </ng-template>
+      </section>
+    </ng-container>
+  </div>
+</div>
