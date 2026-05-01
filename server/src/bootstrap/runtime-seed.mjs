@@ -53,7 +53,6 @@ async function seedRuntimeData() {
         name: table.name,
         discipline: table.discipline,
         shortDiscipline: table.shortDiscipline,
-        status: TableStatus.FREE,
       },
       create: {
         ...table,
@@ -61,6 +60,8 @@ async function seedRuntimeData() {
       },
     });
   }
+
+  await reconcileTableStatuses();
 
   if (process.env.VERCEL) {
     console.log(
@@ -82,4 +83,38 @@ function sanitizeText(value) {
     .trim()
     .replace(/\s+/g, " ")
     .slice(0, 40);
+}
+
+async function reconcileTableStatuses() {
+  const [tables, activeMatches] = await Promise.all([
+    prisma.gameTable.findMany({
+      select: {
+        id: true,
+        status: true,
+      },
+    }),
+    prisma.match.findMany({
+      where: { status: "ACTIVE" },
+      select: { tableId: true },
+    }),
+  ]);
+
+  const activeTableIds = new Set(activeMatches.map((match) => match.tableId));
+
+  await Promise.all(
+    tables.map((table) => {
+      const expectedStatus = activeTableIds.has(table.id)
+        ? TableStatus.OCCUPIED
+        : TableStatus.FREE;
+
+      if (table.status === expectedStatus) {
+        return Promise.resolve();
+      }
+
+      return prisma.gameTable.update({
+        where: { id: table.id },
+        data: { status: expectedStatus },
+      });
+    }),
+  );
 }

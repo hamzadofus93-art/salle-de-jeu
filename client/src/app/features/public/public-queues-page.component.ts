@@ -52,12 +52,14 @@ export class PublicQueuesPageComponent implements OnInit {
     });
   }
 
-  protected get tablesWithWaiting(): DashboardTable[] {
-    return this.queueTables.filter((table) => table.waitingPlayers.length > 0);
+  protected get visibleTables(): DashboardTable[] {
+    return this.queueTables.filter(
+      (table) => table.waitingPlayers.length > 0 || !!table.currentMatch,
+    );
   }
 
   protected get fullscreenTable(): DashboardTable | null {
-    return this.tablesWithWaiting.find((table) => table.id === this.fullscreenTableId) ?? null;
+    return this.visibleTables.find((table) => table.id === this.fullscreenTableId) ?? null;
   }
 
   protected waitingLabel(table: DashboardTable): string {
@@ -70,6 +72,29 @@ export class PublicQueuesPageComponent implements OnInit {
     }
 
     return `${table.waitingPlayers.length} joueurs en attente`;
+  }
+
+  protected nextWaitingPlayerName(table: DashboardTable): string {
+    return table.waitingPlayers[0]?.playerName || '';
+  }
+
+  protected estimatedNextMatchStart(table: DashboardTable): number | null {
+    if (
+      table.discipline !== 'Pool anglais'
+      || !table.currentMatch
+      || !table.waitingPlayers.length
+      || !table.currentMatch.durationMinutes
+    ) {
+      return null;
+    }
+
+    const startedAt = new Date(table.currentMatch.startedAt).getTime();
+
+    if (!Number.isFinite(startedAt)) {
+      return null;
+    }
+
+    return startedAt + table.currentMatch.durationMinutes * 60 * 1000;
   }
 
   protected openTableFullscreen(table: DashboardTable): void {
@@ -123,7 +148,9 @@ export class PublicQueuesPageComponent implements OnInit {
     }
 
     const hasVisibleTable = this.tables.some(
-      (table) => table.id === this.fullscreenTableId && table.waitingPlayers.length > 0,
+      (table) =>
+        table.id === this.fullscreenTableId
+        && (table.waitingPlayers.length > 0 || !!table.currentMatch),
     );
 
     if (!hasVisibleTable) {

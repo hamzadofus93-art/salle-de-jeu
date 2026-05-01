@@ -138,11 +138,15 @@ export class DashboardPageComponent implements OnInit {
   }
 
   protected get freeTables(): DashboardTable[] {
-    return this.tables.filter((table) => table.status === 'free');
+    return this.tables.filter(
+      (table) => table.status === 'free' && !table.currentMatch,
+    );
   }
 
   protected get activeTables(): DashboardTable[] {
-    return this.tables.filter((table) => table.status === 'occupied');
+    return this.tables.filter(
+      (table) => table.status === 'occupied' || !!table.currentMatch,
+    );
   }
 
   protected get leaderboard() {

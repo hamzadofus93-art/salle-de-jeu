@@ -21,7 +21,7 @@ export function toPublicTable(table) {
     name: table.name,
     discipline: table.discipline,
     shortDiscipline: table.shortDiscipline,
-    status: table.status.toLowerCase(),
+    status: activeMatch ? "occupied" : "free",
     sessionsCompleted: table.sessionsCompleted,
     lastWinner: table.lastWinnerName,
     lastEndedAt: table.lastEndedAt,
@@ -40,6 +40,9 @@ export function toPublicWaitingEntry(entry) {
 }
 
 export function toPublicMatch(match) {
+  const normalizedDurationMinutes =
+    match.durationMinutes || getMatchDurationFromFormat(match.format);
+
   return {
     id: match.id,
     tableId: match.tableId,
@@ -52,9 +55,20 @@ export function toPublicMatch(match) {
     winner: match.winnerName,
     startedAt: match.startedAt,
     endedAt: match.endedAt,
-    durationMinutes: match.durationMinutes,
+    durationMinutes: normalizedDurationMinutes,
     status: match.status.toLowerCase(),
   };
+}
+
+function getMatchDurationFromFormat(format) {
+  const match = String(format || "").match(/(\d+)/);
+
+  if (!match) {
+    return null;
+  }
+
+  const durationMinutes = Number(match[1]);
+  return Number.isFinite(durationMinutes) ? durationMinutes : null;
 }
 
 export function toPublicReservation(reservation) {

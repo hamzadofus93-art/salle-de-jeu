@@ -82,8 +82,8 @@
 }
 
 .simple-item {
-  display: grid;
-  grid-template-rows: auto 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 0.55rem;
   padding: 0.95rem 1rem;
   min-height: 15rem;
@@ -104,9 +104,173 @@
   color: var(--phoenix-ink-strong);
 }
 
+.queue-match-box,
+.queue-next-box,
+.queue-estimate-box,
+.queue-fullscreen-match,
+.queue-fullscreen-next {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(42, 37, 33, 0.08);
+}
+
+.queue-match-box,
+.queue-fullscreen-match {
+  justify-items: center;
+  text-align: center;
+  background:
+    linear-gradient(180deg, rgba(180, 44, 32, 0.07), rgba(255, 255, 255, 0.88));
+}
+
+.queue-match-main {
+  display: grid;
+  gap: 0.7rem;
+  width: 100%;
+  justify-items: center;
+  text-align: center;
+}
+
+.queue-match-lineup {
+  display: grid;
+  gap: 0.55rem;
+  justify-items: center;
+  width: 100%;
+}
+
+.queue-match-player {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(42, 37, 33, 0.08);
+  color: var(--phoenix-ink-strong);
+  font-size: 1rem;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.queue-match-versus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3rem;
+  min-height: 2rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(180, 44, 32, 0.12);
+  color: var(--phoenix-red);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.queue-match-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.queue-match-meta-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(42, 37, 33, 0.06);
+  color: var(--phoenix-ink-soft);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.queue-status-badge,
+.queue-next-label,
+.waiting-inline-next-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 1.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.queue-status-badge {
+  background: rgba(180, 44, 32, 0.08);
+  color: var(--phoenix-red);
+}
+
+.queue-next-label,
+.waiting-inline-next-badge {
+  background: rgba(16, 84, 63, 0.1);
+  color: #0d6a50;
+}
+
+.queue-estimate-box {
+  justify-items: center;
+  text-align: center;
+  background: rgba(36, 83, 132, 0.08);
+}
+
+.queue-next-box-compact {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: start;
+  padding-block: 0.85rem;
+  text-align: left;
+}
+
+.queue-next-box-compact strong {
+  color: var(--phoenix-ink-strong);
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.queue-estimate-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 1.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(36, 83, 132, 0.12);
+  color: #1f4f83;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .waiting-inline-list {
+  display: flex;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  gap: 0.55rem;
   align-content: start;
+  min-height: 0;
   overflow: auto;
+}
+
+.queue-item-no-match .waiting-inline-list {
+  align-items: flex-start;
+}
+
+.waiting-inline-chip-next {
+  border-color: rgba(16, 84, 63, 0.18);
+  background: rgba(16, 84, 63, 0.08);
 }
 
 .queue-fullscreen-backdrop {
@@ -171,6 +335,11 @@
   font-size: 1.05rem;
 }
 
+.queue-fullscreen-entry-next {
+  border-color: rgba(16, 84, 63, 0.18);
+  background: rgba(16, 84, 63, 0.08);
+}
+
 .queue-fullscreen-position {
   display: inline-flex;
   align-items: center;
@@ -218,6 +387,11 @@
   .queue-item-head {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .queue-match-meta {
+    flex-direction: column;
+    align-items: center;
   }
 
   .queue-fullscreen-card {

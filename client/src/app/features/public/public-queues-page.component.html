@@ -48,8 +48,12 @@
 
     <ng-container *ngIf="!isLoading">
       <section class="panel queues-panel">
-        <div *ngIf="tablesWithWaiting.length; else noQueues" class="simple-list">
-          <article *ngFor="let table of tablesWithWaiting" class="simple-item queue-item">
+        <div *ngIf="visibleTables.length; else noQueues" class="simple-list">
+          <article
+            *ngFor="let table of visibleTables"
+            class="simple-item queue-item"
+            [class.queue-item-no-match]="!table.currentMatch"
+          >
             <div class="queue-item-head">
               <div class="queue-item-copy">
                 <strong>{{ table.name }}</strong>
@@ -65,8 +69,44 @@
               </button>
             </div>
 
+            <div *ngIf="table.currentMatch" class="queue-match-box">
+              <span class="queue-status-badge">Match en cours</span>
+              <div class="queue-match-main">
+                <div class="queue-match-lineup">
+                  <strong class="queue-match-player">{{ table.currentMatch.playerOne }}</strong>
+                  <span class="queue-match-versus">VS</span>
+                  <strong class="queue-match-player">{{ table.currentMatch.playerTwo }}</strong>
+                </div>
+                <div class="queue-match-meta">
+                  <span class="queue-match-meta-item">Debut : {{ table.currentMatch.startedAt | date: 'short' }}</span>
+                  <span *ngIf="table.currentMatch.durationMinutes" class="queue-match-meta-item">
+                    Duree : {{ table.currentMatch.durationMinutes }} min
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              *ngIf="nextWaitingPlayerName(table)"
+              class="queue-next-box"
+              [class.queue-next-box-compact]="!table.currentMatch"
+            >
+              <span class="queue-next-label">Next</span>
+              <strong>{{ nextWaitingPlayerName(table) }}</strong>
+            </div>
+
+            <div *ngIf="estimatedNextMatchStart(table) as nextStart" class="queue-estimate-box">
+              <span class="queue-estimate-label">Prochain match estime</span>
+              <strong>{{ nextStart | date: 'HH:mm' }}</strong>
+            </div>
+
             <div class="waiting-inline-list">
-              <span *ngFor="let entry of table.waitingPlayers" class="waiting-inline-chip">
+              <span
+                *ngFor="let entry of table.waitingPlayers; let isFirst = first"
+                class="waiting-inline-chip"
+                [class.waiting-inline-chip-next]="isFirst"
+              >
+                <span *ngIf="isFirst" class="waiting-inline-next-badge">Next</span>
                 {{ entry.position }}. {{ entry.playerName }}
               </span>
             </div>
@@ -74,7 +114,7 @@
         </div>
 
         <ng-template #noQueues>
-          <div class="empty-inline">Aucun joueur en attente pour le moment.</div>
+          <div class="empty-inline">Aucun match ni joueur en attente pour le moment.</div>
         </ng-template>
       </section>
 
@@ -104,12 +144,45 @@
           </div>
 
           <div class="queue-fullscreen-body">
+            <div *ngIf="table.currentMatch" class="queue-fullscreen-match">
+              <span class="queue-status-badge">Match en cours</span>
+              <div class="queue-match-main">
+                <div class="queue-match-lineup">
+                  <strong class="queue-match-player">{{ table.currentMatch.playerOne }}</strong>
+                  <span class="queue-match-versus">VS</span>
+                  <strong class="queue-match-player">{{ table.currentMatch.playerTwo }}</strong>
+                </div>
+                <div class="queue-match-meta">
+                  <span class="queue-match-meta-item">Debut : {{ table.currentMatch.startedAt | date: 'short' }}</span>
+                  <span *ngIf="table.currentMatch.durationMinutes" class="queue-match-meta-item">
+                    Duree : {{ table.currentMatch.durationMinutes }} min
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="nextWaitingPlayerName(table)" class="queue-fullscreen-next">
+              <span class="queue-next-label">Next</span>
+              <strong>{{ nextWaitingPlayerName(table) }}</strong>
+            </div>
+
+            <div *ngIf="estimatedNextMatchStart(table) as nextStart" class="queue-fullscreen-next queue-estimate-box">
+              <span class="queue-estimate-label">Prochain match estime</span>
+              <strong>{{ nextStart | date: 'HH:mm' }}</strong>
+            </div>
+
+            <div *ngIf="!table.waitingPlayers.length" class="empty-inline">
+              Aucun joueur en attente actuellement.
+            </div>
+
             <div class="queue-fullscreen-grid">
               <article
-                *ngFor="let entry of table.waitingPlayers"
+                *ngFor="let entry of table.waitingPlayers; let isFirst = first"
                 class="queue-fullscreen-entry"
+                [class.queue-fullscreen-entry-next]="isFirst"
               >
                 <span class="queue-fullscreen-position">{{ entry.position }}</span>
+                <span *ngIf="isFirst" class="waiting-inline-next-badge">Next</span>
                 <strong>{{ entry.playerName }}</strong>
               </article>
             </div>
