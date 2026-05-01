@@ -12,7 +12,7 @@ export async function listTablesController(_request, response) {
 }
 
 export async function createTableController(request, response) {
-  const table = await createTable(request.body);
+  const table = await createTable(request.body, request.user);
   response.status(201).json({ table });
 }
 

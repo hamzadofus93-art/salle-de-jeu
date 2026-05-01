@@ -21,6 +21,7 @@ export class PublicQueuesPageComponent implements OnInit {
   private isDestroyed = false;
 
   protected tables: DashboardTable[] = [];
+  protected fullscreenTableId = '';
   protected isLoading = true;
   protected isRefreshing = false;
   protected errorMessage = '';
@@ -55,6 +56,10 @@ export class PublicQueuesPageComponent implements OnInit {
     return this.queueTables.filter((table) => table.waitingPlayers.length > 0);
   }
 
+  protected get fullscreenTable(): DashboardTable | null {
+    return this.tablesWithWaiting.find((table) => table.id === this.fullscreenTableId) ?? null;
+  }
+
   protected waitingLabel(table: DashboardTable): string {
     if (!table.waitingPlayers.length) {
       return 'Aucun joueur en attente';
@@ -65,6 +70,20 @@ export class PublicQueuesPageComponent implements OnInit {
     }
 
     return `${table.waitingPlayers.length} joueurs en attente`;
+  }
+
+  protected openTableFullscreen(table: DashboardTable): void {
+    this.fullscreenTableId = table.id;
+    this.render();
+  }
+
+  protected closeTableFullscreen(): void {
+    if (!this.fullscreenTableId) {
+      return;
+    }
+
+    this.fullscreenTableId = '';
+    this.render();
   }
 
   protected async refresh(): Promise<void> {
@@ -82,6 +101,7 @@ export class PublicQueuesPageComponent implements OnInit {
         this.dashboardApi.getPublicTables().pipe(timeout(REQUEST_TIMEOUT_MS)),
       );
       this.tables = response.tables;
+      this.syncFullscreenTable();
     } catch (error) {
       this.errorMessage = extractHttpErrorMessage(error);
     } finally {
@@ -94,6 +114,20 @@ export class PublicQueuesPageComponent implements OnInit {
   private render(): void {
     if (!this.isDestroyed) {
       this.cdr.detectChanges();
+    }
+  }
+
+  private syncFullscreenTable(): void {
+    if (!this.fullscreenTableId) {
+      return;
+    }
+
+    const hasVisibleTable = this.tables.some(
+      (table) => table.id === this.fullscreenTableId && table.waitingPlayers.length > 0,
+    );
+
+    if (!hasVisibleTable) {
+      this.fullscreenTableId = '';
     }
   }
 }

@@ -29,7 +29,11 @@ export async function listTables() {
     .map(toPublicTable);
 }
 
-export async function createTable(payload) {
+export async function createTable(payload, actor = null) {
+  if (actor?.role !== "SUDO") {
+    throw forbidden("Seul le super admin peut ajouter une table.");
+  }
+
   const discipline = normalizeTableDiscipline(payload?.discipline);
   const tableNumber = normalizeTableNumber(payload?.tableNumber);
 

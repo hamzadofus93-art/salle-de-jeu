@@ -122,6 +122,7 @@
             {{ mainActionLabel }}
           </button>
           <button
+            *ngIf="isSudo"
             class="btn btn-outline-dark command-action-secondary"
             type="button"
             (click)="openAddTableModal()"
@@ -199,7 +200,16 @@
               <h3 class="mb-1">Parties en cours</h3>
               <p class="panel-text mb-0">Les tables a cloturer ensuite.</p>
             </div>
-            <span class="section-badge">{{ activeTables.length }}</span>
+            <div class="section-head-actions">
+              <button
+                class="btn btn-sm btn-outline-dark"
+                type="button"
+                (click)="openQueuesModal(true, 'matches')"
+              >
+                Plein ecran
+              </button>
+              <span class="section-badge">{{ activeTables.length }}</span>
+            </div>
           </div>
 
           <div *ngIf="activeTables.length; else noActiveTables" class="simple-list">
@@ -236,6 +246,13 @@
                 (click)="requestResetAllWaitingLists()"
               >
                 Vider les files
+              </button>
+              <button
+                class="btn btn-sm btn-outline-dark"
+                type="button"
+                (click)="openQueuesModal(true, 'waiting')"
+              >
+                Plein ecran
               </button>
               <span class="section-badge">{{ totalWaitingPlayers }}</span>
             </div>
@@ -294,10 +311,13 @@
         <div
           class="modal-card"
           [class.modal-card-wide]="activeModal === 'queues' || activeModal === 'history' || activeModal === 'admin'"
+          [style.width]="activeModal === 'queues' && isQueuesFullscreen ? 'calc(100vw - 1rem)' : null"
+          [style.height]="activeModal === 'queues' && isQueuesFullscreen ? 'calc(100vh - 1rem)' : null"
+          [style.maxHeight]="activeModal === 'queues' && isQueuesFullscreen ? 'calc(100vh - 1rem)' : null"
           (click)="$event.stopPropagation()"
         >
           <div class="modal-head">
-            <div *ngIf="activeModal === 'add-table'">
+            <div *ngIf="activeModal === 'add-table' && isSudo">
               <p class="eyebrow mb-2">Tables</p>
               <h2 class="mb-1">Ajouter une table</h2>
               <p class="panel-text mb-0">Choisis la discipline et le numero pour creer une table libre.</p>
@@ -335,6 +355,34 @@
               <p class="panel-text mb-0">Tout l'administratif est ici, sans charger l'ecran principal.</p>
             </div>
 
+            <div *ngIf="activeModal === 'queues'" class="section-head-actions">
+              <div class="btn-group flex-wrap" role="group" aria-label="Afficher les files ou les matchs">
+                <button
+                  class="btn btn-sm"
+                  type="button"
+                  [ngClass]="queueModalView === 'waiting' ? 'btn-danger' : 'btn-outline-dark'"
+                  (click)="setQueueModalView('waiting')"
+                >
+                  Files d'attente ({{ totalWaitingPlayers }})
+                </button>
+                <button
+                  class="btn btn-sm"
+                  type="button"
+                  [ngClass]="queueModalView === 'matches' ? 'btn-danger' : 'btn-outline-dark'"
+                  (click)="setQueueModalView('matches')"
+                >
+                  Matchs en cours ({{ activeTables.length }})
+                </button>
+              </div>
+              <button
+                class="btn btn-outline-dark btn-sm"
+                type="button"
+                (click)="toggleQueuesFullscreen()"
+              >
+                {{ isQueuesFullscreen ? 'Quitter le plein ecran' : 'Plein ecran' }}
+              </button>
+            </div>
+
             <button
               class="btn-close"
               type="button"
@@ -353,7 +401,7 @@
           </div>
 
           <form
-            *ngIf="activeModal === 'add-table'"
+            *ngIf="activeModal === 'add-table' && isSudo"
             class="form-grid"
             (ngSubmit)="submitAddTable()"
             #addTableFormRef="ngForm"
@@ -816,8 +864,17 @@
 
           <div *ngIf="activeModal === 'queues'" class="modal-stack">
             <div class="details-grid">
-              <section class="subpanel">
-                <h3>Priorite d'accueil</h3>
+              <section class="subpanel" *ngIf="queueModalView === 'waiting'">
+                <div class="section-head">
+                  <div>
+                    <h3 class="mb-1">Files d'attente par table</h3>
+                    <p class="panel-text mb-0">
+                      Affiche toutes les listes et ouvre vite l'action utile.
+                    </p>
+                  </div>
+                  <span class="section-badge">{{ totalWaitingPlayers }}</span>
+                </div>
+
                 <div *ngIf="queueTables.length; else noQueueTables" class="simple-list">
                   <article *ngFor="let table of queueTables" class="simple-item">
                     <strong>{{ table.name }}</strong>
@@ -847,6 +904,42 @@
                 </div>
                 <ng-template #noQueueTables>
                   <div class="empty-inline">Aucune table disponible.</div>
+                </ng-template>
+              </section>
+
+              <section class="subpanel" *ngIf="queueModalView === 'matches'">
+                <div class="section-head">
+                  <div>
+                    <h3 class="mb-1">Matchs en cours</h3>
+                    <p class="panel-text mb-0">
+                      Suis les tables occupees sans quitter la vue des files.
+                    </p>
+                  </div>
+                  <span class="section-badge">{{ activeTables.length }}</span>
+                </div>
+
+                <div *ngIf="activeTables.length; else noQueueMatches" class="simple-list">
+                  <article *ngFor="let table of activeTables" class="simple-item">
+                    <strong>{{ table.name }}</strong>
+                    <span>
+                      {{ table.currentMatch?.playerOne }} vs {{ table.currentMatch?.playerTwo }}
+                    </span>
+                    <span>{{ table.discipline }} - Debut : {{ table.currentMatch?.startedAt | date: 'short' }}</span>
+                    <span *ngIf="table.currentMatch?.durationMinutes">
+                      Duree prevue : {{ table.currentMatch?.durationMinutes }} min
+                    </span>
+                    <span *ngIf="table.waitingPlayers.length">
+                      Suite en attente : {{ waitingLabel(table) }}
+                    </span>
+                    <div class="simple-actions">
+                      <button class="btn btn-sm btn-outline-dark" type="button" (click)="openFinishMatchModal(table)">
+                        Terminer
+                      </button>
+                    </div>
+                  </article>
+                </div>
+                <ng-template #noQueueMatches>
+                  <div class="empty-inline">Aucune partie en cours actuellement.</div>
                 </ng-template>
               </section>
 

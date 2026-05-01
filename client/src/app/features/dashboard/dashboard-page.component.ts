@@ -22,6 +22,7 @@ import { UserReservationsPageComponent } from '../reservations/user-reservations
 const REQUEST_TIMEOUT_MS = 8000;
 type NewTableDiscipline = 'pool' | 'snooker';
 type TablePickerFilter = 'all' | 'pool' | 'snooker';
+type QueueModalView = 'waiting' | 'matches';
 type DashboardModal =
   | 'add-table'
   | 'add-player'
@@ -54,6 +55,8 @@ export class DashboardPageComponent implements OnInit {
   protected isRefreshing = false;
   protected isHistoryLoading = false;
   protected activeModal: DashboardModal = null;
+  protected queueModalView: QueueModalView = 'waiting';
+  protected isQueuesFullscreen = false;
   protected isAddPlayerTableMenuOpen = false;
   protected isStartTableMenuOpen = false;
   protected lockedAddPlayerTableId = '';
@@ -465,6 +468,24 @@ export class DashboardPageComponent implements OnInit {
     return `${table.waitingPlayers.length} joueurs en attente`;
   }
 
+  protected setQueueModalView(view: QueueModalView): void {
+    if (this.queueModalView === view) {
+      return;
+    }
+
+    this.queueModalView = view;
+    this.render();
+  }
+
+  protected toggleQueuesFullscreen(): void {
+    if (this.activeModal !== 'queues') {
+      return;
+    }
+
+    this.isQueuesFullscreen = !this.isQueuesFullscreen;
+    this.render();
+  }
+
   protected setAddPlayerTableFilter(filter: TablePickerFilter): void {
     if (this.addPlayerTableFilter === filter) {
       return;
@@ -507,6 +528,7 @@ export class DashboardPageComponent implements OnInit {
 
   protected closeModal(): void {
     this.activeModal = null;
+    this.resetQueueModalState();
     this.isAddPlayerTableMenuOpen = false;
     this.isStartTableMenuOpen = false;
     this.lockedAddPlayerTableId = '';
@@ -531,6 +553,7 @@ export class DashboardPageComponent implements OnInit {
   }
 
   protected openHistoryModal(): void {
+    this.resetQueueModalState();
     this.isAddPlayerTableMenuOpen = false;
     this.isStartTableMenuOpen = false;
     this.lockedAddPlayerTableId = '';
@@ -543,6 +566,11 @@ export class DashboardPageComponent implements OnInit {
   }
 
   protected openAddTableModal(): void {
+    if (!this.isSudo) {
+      return;
+    }
+
+    this.resetQueueModalState();
     this.isAddPlayerTableMenuOpen = false;
     this.isStartTableMenuOpen = false;
     this.lockedAddPlayerTableId = '';
@@ -556,12 +584,17 @@ export class DashboardPageComponent implements OnInit {
     this.render();
   }
 
-  protected openQueuesModal(): void {
+  protected openQueuesModal(
+    fullscreen = false,
+    view: QueueModalView = 'waiting',
+  ): void {
     this.isAddPlayerTableMenuOpen = false;
     this.isStartTableMenuOpen = false;
     this.lockedAddPlayerTableId = '';
     this.lockedStartTableId = '';
     this.lockedFinishMatchId = '';
+    this.queueModalView = view;
+    this.isQueuesFullscreen = fullscreen;
     this.activeModal = 'queues';
     this.render();
   }
@@ -666,6 +699,7 @@ export class DashboardPageComponent implements OnInit {
       return;
     }
 
+    this.resetQueueModalState();
     this.isAddPlayerTableMenuOpen = false;
     this.isStartTableMenuOpen = false;
     this.lockedAddPlayerTableId = '';
@@ -677,6 +711,7 @@ export class DashboardPageComponent implements OnInit {
 
   protected openAddPlayerModal(table?: DashboardTable): void {
     const preferredTable = table ?? this.selectedAddPlayerTable ?? this.tables[0] ?? null;
+    this.resetQueueModalState();
     this.isAddPlayerTableMenuOpen = false;
     this.isStartTableMenuOpen = false;
     this.lockedAddPlayerTableId = table?.id ?? '';
@@ -745,6 +780,7 @@ export class DashboardPageComponent implements OnInit {
   }
 
   protected openStartMatchModal(table?: DashboardTable): void {
+    this.resetQueueModalState();
     this.isAddPlayerTableMenuOpen = false;
     this.isStartTableMenuOpen = false;
     const preferredTable =
@@ -768,6 +804,7 @@ export class DashboardPageComponent implements OnInit {
   }
 
   protected openFinishMatchModal(table?: DashboardTable): void {
+    this.resetQueueModalState();
     this.isAddPlayerTableMenuOpen = false;
     this.isStartTableMenuOpen = false;
     const selectedTable =
@@ -841,6 +878,12 @@ export class DashboardPageComponent implements OnInit {
   }
 
   protected async submitAddTable(): Promise<void> {
+    if (!this.isSudo) {
+      this.errorMessage = "Seul le super admin peut ajouter une table.";
+      this.render();
+      return;
+    }
+
     const discipline = this.addTableForm.discipline;
     const tableNumber = this.normalizedAddTableNumber;
     const tableName = this.buildTableName(discipline, tableNumber);
@@ -1383,6 +1426,11 @@ export class DashboardPageComponent implements OnInit {
       .trim()
       .replace(/\s+/g, ' ')
       .toLowerCase();
+  }
+
+  private resetQueueModalState(): void {
+    this.queueModalView = 'waiting';
+    this.isQueuesFullscreen = false;
   }
 
   private async runAction(action: () => Promise<void>): Promise<void> {

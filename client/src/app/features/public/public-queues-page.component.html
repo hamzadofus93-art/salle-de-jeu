@@ -55,6 +55,14 @@
                 <strong>{{ table.name }}</strong>
                 <span>{{ waitingLabel(table) }}</span>
               </div>
+
+              <button
+                class="btn btn-sm btn-outline-dark"
+                type="button"
+                (click)="openTableFullscreen(table)"
+              >
+                Plein ecran
+              </button>
             </div>
 
             <div class="waiting-inline-list">
@@ -69,6 +77,45 @@
           <div class="empty-inline">Aucun joueur en attente pour le moment.</div>
         </ng-template>
       </section>
+
+      <div
+        *ngIf="fullscreenTable as table"
+        class="queue-fullscreen-backdrop"
+        (click)="closeTableFullscreen()"
+      >
+        <section
+          class="queue-fullscreen-card"
+          (click)="$event.stopPropagation()"
+        >
+          <div class="queue-fullscreen-head">
+            <div class="queue-fullscreen-copy">
+              <p class="eyebrow mb-2">File d'attente</p>
+              <h2 class="mb-1">{{ table.name }}</h2>
+              <p class="topbar-text mb-0">{{ table.discipline }} - {{ waitingLabel(table) }}</p>
+            </div>
+
+            <button
+              class="btn btn-outline-dark"
+              type="button"
+              (click)="closeTableFullscreen()"
+            >
+              Fermer
+            </button>
+          </div>
+
+          <div class="queue-fullscreen-body">
+            <div class="queue-fullscreen-grid">
+              <article
+                *ngFor="let entry of table.waitingPlayers"
+                class="queue-fullscreen-entry"
+              >
+                <span class="queue-fullscreen-position">{{ entry.position }}</span>
+                <strong>{{ entry.playerName }}</strong>
+              </article>
+            </div>
+          </div>
+        </section>
+      </div>
     </ng-container>
   </div>
 </div>
