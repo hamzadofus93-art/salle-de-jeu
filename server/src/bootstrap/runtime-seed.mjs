@@ -86,7 +86,8 @@ function sanitizeText(value) {
 }
 
 async function reconcileTableStatuses() {
-  const [tables, activeMatches] = await Promise.all([
+  const now = new Date();
+  const [tables, activeMatches, activeReservations] = await Promise.all([
     prisma.gameTable.findMany({
       select: {
         id: true,
@@ -97,9 +98,20 @@ async function reconcileTableStatuses() {
       where: { status: "ACTIVE" },
       select: { tableId: true },
     }),
+    prisma.reservation.findMany({
+      where: {
+        status: "UPCOMING",
+        startAt: { lte: now },
+        endAt: { gt: now },
+      },
+      select: { tableId: true },
+    }),
   ]);
 
-  const activeTableIds = new Set(activeMatches.map((match) => match.tableId));
+  const activeTableIds = new Set([
+    ...activeMatches.map((match) => match.tableId),
+    ...activeReservations.map((reservation) => reservation.tableId),
+  ]);
 
   await Promise.all(
     tables.map((table) => {

@@ -26,6 +26,7 @@ enum MatchStatus {
 enum ReservationStatus {
   UPCOMING
   CANCELED
+  COMPLETED
 }
 
 model User {
@@ -38,6 +39,7 @@ model User {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   reservations Reservation[]
+  managedTables GameTable[] @relation("ManagedTables")
 }
 
 model GameTable {
@@ -54,6 +56,7 @@ model GameTable {
   matches         Match[]
   waitingEntries  WaitingQueueEntry[]
   reservations    Reservation[]
+  managers        User[]            @relation("ManagedTables")
 }
 
 model Match {
@@ -94,6 +97,7 @@ model Reservation {
   id              String            @id @default(cuid())
   tableId         String
   userId          String
+  clientName      String?
   startAt         DateTime
   endAt           DateTime
   durationMinutes Int

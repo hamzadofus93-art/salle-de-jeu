@@ -9,9 +9,9 @@
 
 .reservation-topbar,
 .reservation-panel {
-  border-radius: 1.5rem;
-  border: 1px solid rgba(42, 37, 33, 0.08);
-  background: rgba(255, 252, 246, 0.94);
+  border-radius: 0.75rem;
+  border: 1px solid var(--phoenix-line-strong);
+  background: var(--phoenix-panel);
   box-shadow: var(--phoenix-shadow-soft);
 }
 
@@ -32,7 +32,7 @@
   color: var(--phoenix-red);
   font-size: 0.76rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -63,8 +63,9 @@
 
 .reservation-user-box {
   padding: 0.9rem 1rem;
-  border-radius: 1rem;
-  background: rgba(16, 84, 63, 0.08);
+  border-radius: 0.5rem;
+  border: 1px solid var(--phoenix-line-strong);
+  background: rgba(246, 244, 243, 0.48);
 }
 
 .reservation-user-box strong {
@@ -81,14 +82,14 @@
   min-height: 2rem;
   padding: 0.3rem 0.75rem;
   border-radius: 999px;
-  background: rgba(36, 83, 132, 0.12);
-  color: #1f4f83;
+  background: rgba(0, 163, 224, 0.16);
+  color: #231f20;
   font-size: 0.82rem;
   font-weight: 700;
 }
 
 .reservation-owner-badge-mine {
-  background: rgba(180, 44, 32, 0.12);
+  background: rgba(237, 28, 36, 0.16);
   color: var(--phoenix-red);
 }
 
@@ -121,30 +122,30 @@
 .reservation-empty-compact {
   min-height: auto;
   padding: 0.9rem 1rem;
-  border-radius: 1rem;
-  border: 1px dashed rgba(180, 44, 32, 0.18);
-  background: rgba(180, 44, 32, 0.06);
+  border-radius: 0.5rem;
+  border: 1px dashed rgba(237, 28, 36, 0.3);
+  background: rgba(237, 28, 36, 0.1);
   color: var(--phoenix-ink-soft);
 }
 
 .reservation-hint-card,
 .reservation-item {
   padding: 0.9rem 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(42, 37, 33, 0.08);
-  background: rgba(255, 255, 255, 0.76);
+  border-radius: 0.5rem;
+  border: 1px solid var(--phoenix-line-strong);
+  background: rgba(255, 255, 255, 0.56);
 }
 
 .reservation-edit-banner {
   margin-bottom: 1rem;
   padding: 0.9rem 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(36, 83, 132, 0.16);
-  background: rgba(36, 83, 132, 0.06);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(0, 163, 224, 0.24);
+  background: rgba(0, 163, 224, 0.08);
 }
 
 .reservation-edit-banner strong {
-  color: #1f4f83;
+  color: #231f20;
 }
 
 .reservation-hint-card strong,
@@ -180,7 +181,7 @@
   min-height: 2rem;
   padding: 0.3rem 0.75rem;
   border-radius: 999px;
-  background: rgba(180, 44, 32, 0.08);
+  background: rgba(237, 28, 36, 0.14);
   color: var(--phoenix-ink-strong);
   font-size: 0.84rem;
   font-weight: 600;

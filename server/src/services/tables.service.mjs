@@ -2,19 +2,26 @@ import { prisma } from "../db/prisma.mjs";
 import { badRequest, forbidden, notFound } from "../utils/http-error.mjs";
 import { namesMatch, sanitizeText } from "../utils/normalize.mjs";
 import { toPublicTable } from "../utils/serializers.mjs";
+import { assertCanManageTable, managedTableWhere } from "./table-access.service.mjs";
 
 const tableInclude = {
   matches: {
     where: { status: "ACTIVE" },
     orderBy: { startedAt: "desc" },
   },
+  reservations: {
+    where: { status: "UPCOMING" },
+    include: { user: true },
+    orderBy: { endAt: "asc" },
+  },
   waitingEntries: {
     orderBy: { position: "asc" },
   },
 };
 
-export async function listTables() {
+export async function listTables(actor = null) {
   const tables = await prisma.gameTable.findMany({
+    where: managedTableWhere(actor),
     include: tableInclude,
     orderBy: { name: "asc" },
   });
@@ -61,7 +68,60 @@ export async function createTable(payload, actor = null) {
   return getTableById(tableData.id);
 }
 
+export async function deleteTable(tableId, actor = null) {
+  if (actor?.role !== "SUDO") {
+    throw forbidden("Seul le super admin peut supprimer une table.");
+  }
+
+  const normalizedTableId = sanitizeText(tableId, 50);
+
+  if (!normalizedTableId) {
+    throw badRequest("Choisis la table à supprimer.");
+  }
+
+  const table = await prisma.gameTable.findUnique({
+    where: { id: normalizedTableId },
+    include: {
+      matches: {
+        select: { id: true, status: true },
+      },
+      waitingEntries: {
+        select: { id: true },
+      },
+      reservations: {
+        select: { id: true, status: true },
+      },
+    },
+  });
+
+  if (!table) {
+    throw notFound("Table introuvable.");
+  }
+
+  if (table.status === "OCCUPIED" || table.matches.some((match) => match.status === "ACTIVE")) {
+    throw badRequest("Impossible de supprimer une table avec une partie en cours.");
+  }
+
+  if (table.waitingEntries.length) {
+    throw badRequest("Vide la file d'attente avant de supprimer cette table.");
+  }
+
+  if (table.matches.length || table.reservations.length) {
+    throw badRequest("Impossible de supprimer une table qui possède déjà un historique.");
+  }
+
+  await prisma.gameTable.delete({
+    where: { id: table.id },
+  });
+
+  return { deletedTableId: table.id };
+}
+
 export async function addWaitingPlayer(tableId, payload, actor = null) {
+  if (isStaff(actor)) {
+    await assertCanManageTable(actor, tableId);
+  }
+
   const table = await prisma.gameTable.findUnique({
     where: { id: tableId },
     include: tableInclude,
@@ -106,6 +166,10 @@ export async function addWaitingPlayer(tableId, payload, actor = null) {
 }
 
 export async function removeWaitingPlayer(tableId, entryId, actor = null) {
+  if (isStaff(actor)) {
+    await assertCanManageTable(actor, tableId);
+  }
+
   const table = await prisma.gameTable.findUnique({
     where: { id: tableId },
     include: tableInclude,
@@ -148,14 +212,18 @@ export async function removeWaitingPlayer(tableId, entryId, actor = null) {
   return getTableById(table.id);
 }
 
-export async function resetAllWaitingLists() {
-  const clearedCount = await prisma.waitingQueueEntry.count();
+export async function resetAllWaitingLists(actor = null) {
+  const tableWhere = managedTableWhere(actor);
+  const where = Object.keys(tableWhere).length
+    ? { table: tableWhere }
+    : {};
+  const clearedCount = await prisma.waitingQueueEntry.count({ where });
 
   if (!clearedCount) {
     return { clearedCount: 0 };
   }
 
-  await prisma.waitingQueueEntry.deleteMany({});
+  await prisma.waitingQueueEntry.deleteMany({ where });
 
   return { clearedCount };
 }

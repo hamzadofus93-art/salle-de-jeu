@@ -123,7 +123,7 @@ export class UserReservationsPageComponent implements OnInit {
     const playerName = this.queueDisplayName;
 
     if (!playerName) {
-      this.errorMessage = "Impossible de retrouver le nom du client connecte.";
+      this.errorMessage = "Impossible de retrouver le nom du client connecté.";
       this.render();
       return;
     }
@@ -135,7 +135,7 @@ export class UserReservationsPageComponent implements OnInit {
     }
 
     if (this.blockedTableIds.includes(table.id)) {
-      this.errorMessage = 'Ton nom est deja dans la file d attente de cette table.';
+      this.errorMessage = "Ton nom est déjà dans la file d'attente de cette table.";
       this.render();
       return;
     }

@@ -5,6 +5,9 @@ import tablesRoutes from "./tables.routes.mjs";
 import matchesRoutes from "./matches.routes.mjs";
 import dashboardRoutes from "./dashboard.routes.mjs";
 import reservationsRoutes from "./reservations.routes.mjs";
+import { asyncHandler } from "../utils/async-handler.mjs";
+import { autoCloseExpiredPoolMatches } from "../services/matches.service.mjs";
+import { autoCompleteExpiredPoolReservations } from "../services/reservations.service.mjs";
 
 const router = Router();
 
@@ -14,6 +17,15 @@ router.get("/health", (_request, response) => {
     service: "phoenix-snooker-server",
   });
 });
+router.use(
+  asyncHandler(async (_request, _response, next) => {
+    await Promise.all([
+      autoCloseExpiredPoolMatches(),
+      autoCompleteExpiredPoolReservations(),
+    ]);
+    next();
+  }),
+);
 
 router.use("/auth", authRoutes);
 router.use("/accounts", accountsRoutes);

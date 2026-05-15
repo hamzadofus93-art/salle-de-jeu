@@ -6,17 +6,18 @@ import {
 } from "../services/dashboard.service.mjs";
 
 export async function dashboardStateController(request, response) {
-  const state = await getDashboardState(request.query.limit);
+  const state = await getDashboardState(request.user, request.query.limit);
   response.status(200).json(state);
 }
 
-export async function leaderboardController(_request, response) {
-  const leaderboard = await getLeaderboard();
+export async function leaderboardController(request, response) {
+  const leaderboard = await getLeaderboard(request.user);
   response.status(200).json(leaderboard);
 }
 
 export async function historyController(request, response) {
   const history = await getHistory({
+    actor: request.user,
     page: request.query.page,
     pageSize: request.query.pageSize ?? request.query.limit,
     discipline: request.query.discipline,

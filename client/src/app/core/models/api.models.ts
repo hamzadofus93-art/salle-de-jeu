@@ -1,7 +1,7 @@
 export type UserRole = 'admin' | 'sudo' | 'user';
 export type TableStatus = 'free' | 'occupied';
 export type MatchStatus = 'active' | 'finished';
-export type ReservationStatus = 'upcoming' | 'canceled';
+export type ReservationStatus = 'upcoming' | 'canceled' | 'completed';
 export type HistoryDisciplineFilter = 'all' | 'snooker' | 'pool';
 
 export interface UserAccount {
@@ -10,8 +10,16 @@ export interface UserAccount {
   displayName: string;
   role: UserRole;
   isActive: boolean;
+  managedTableIds: string[];
+  managedTables: AccountManagedTable[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AccountManagedTable {
+  id: string;
+  name: string;
+  discipline: string;
 }
 
 export interface LoginResponse {
@@ -43,6 +51,7 @@ export interface MatchRecord {
   startedAt: string;
   endedAt: string | null;
   durationMinutes: number | null;
+  amountDueDh: number | null;
   status: MatchStatus;
 }
 
@@ -56,6 +65,7 @@ export interface DashboardTable {
   lastWinner: string | null;
   lastEndedAt: string | null;
   currentMatch: MatchRecord | null;
+  currentReservation: ReservationRecord | null;
   waitingPlayers: WaitingPlayerEntry[];
 }
 
@@ -83,6 +93,7 @@ export interface DashboardState {
   leaderboard: LeaderboardRow[];
   history: HistoryRow[];
   historyTotal: number;
+  historyPaidTotalDh: number;
 }
 
 export interface AccountsResponse {
@@ -96,6 +107,7 @@ export interface HistoryResponse {
   page: number;
   pageSize: number;
   totalPages: number;
+  totalPaidDh: number;
   rows: HistoryRow[];
 }
 
@@ -121,9 +133,11 @@ export interface ReservationRecord {
   tableId: string;
   tableName: string | null;
   discipline: string | null;
+  clientName: string | null;
   startAt: string;
   endAt: string;
   durationMinutes: number;
+  amountDueDh: number | null;
   note: string | null;
   status: ReservationStatus;
   createdAt: string;

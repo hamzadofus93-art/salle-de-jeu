@@ -4,7 +4,7 @@
       <p class="eyebrow mb-2">Espace client</p>
       <h1 class="mb-2">Mes files d'attente</h1>
       <p class="reservation-copy mb-0">
-        Choisis une table pour ajouter ton nom, puis suis simplement ou tu attends deja.
+        Choisis une table pour ajouter ton nom, puis suis simplement où tu attends déjà.
       </p>
     </div>
 
@@ -28,7 +28,7 @@
             *ngIf="isRefreshing"
             class="spinner-border spinner-border-sm me-2"
           ></span>
-          Rafraichir
+          Rafraîchir
         </button>
 
         <button class="btn btn-danger" type="button" (click)="logout()">
@@ -102,7 +102,7 @@
           </div>
 
           <div *ngIf="!availableTables.length" class="reservation-empty reservation-empty-compact">
-            Ton nom est deja present sur toutes les tables disponibles ou aucune table n'est ouverte.
+            Ton nom est déjà présent sur toutes les tables disponibles ou aucune table n'est ouverte.
           </div>
 
           <button
@@ -123,9 +123,9 @@
         <div class="reservation-panel-head">
           <div>
             <p class="eyebrow mb-2">Suivi</p>
-            <h2 class="mb-1">Ou j'attends deja</h2>
+            <h2 class="mb-1">Où j'attends déjà</h2>
             <p class="reservation-copy mb-0">
-              Retrouve ici les tables ou ton nom est deja present.
+              Retrouve ici les tables où ton nom est déjà présent.
             </p>
           </div>
         </div>

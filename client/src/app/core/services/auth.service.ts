@@ -57,6 +57,26 @@ export class AuthService {
     );
   }
 
+  updateCurrentUser(payload: {
+    displayName: string;
+    username: string;
+    password?: string;
+  }): Observable<UserAccount> {
+    return this.http.patch<AuthMeResponse>(`${API_BASE_URL}/auth/me`, payload).pipe(
+      tap((response) => {
+        const currentToken = this.getToken();
+
+        if (currentToken) {
+          this.persistSession({
+            token: currentToken,
+            user: response.user,
+          });
+        }
+      }),
+      map((response) => response.user),
+    );
+  }
+
   logout(redirectToLogin = true): void {
     this.clearSession();
 

@@ -2,6 +2,7 @@ import {
   createAccount,
   deleteAccount,
   listAccounts,
+  updateAccountManagedTables,
   updateAccountStatus,
 } from "../services/accounts.service.mjs";
 
@@ -20,6 +21,16 @@ export async function updateAccountStatusController(request, response) {
     request.user,
     request.params.accountId,
     request.body?.isActive,
+  );
+
+  response.status(200).json({ account });
+}
+
+export async function updateAccountManagedTablesController(request, response) {
+  const account = await updateAccountManagedTables(
+    request.user,
+    request.params.accountId,
+    request.body,
   );
 
   response.status(200).json({ account });

@@ -13,9 +13,9 @@
   width: min(100%, 36rem);
   margin: 0 auto;
   padding: 1.5rem;
-  border-radius: 1.5rem;
-  border: 1px solid rgba(42, 37, 33, 0.08);
-  background: rgba(255, 252, 246, 0.94);
+  border-radius: 0.75rem;
+  border: 1px solid var(--phoenix-line-strong);
+  background: var(--phoenix-panel);
   box-shadow: var(--phoenix-shadow);
 }
 
@@ -31,9 +31,9 @@
   display: grid;
   place-items: center;
   padding: 0.7rem 0.9rem;
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(42, 37, 33, 0.08);
+  border-radius: 0.5rem;
+  background: rgba(255, 237, 236, 0.96);
+  border: 1px solid var(--phoenix-line-strong);
 }
 
 .brand-logo {
@@ -46,7 +46,7 @@
   color: var(--phoenix-red);
   font-size: 0.76rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -71,7 +71,7 @@
 .visitor-panel {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(42, 37, 33, 0.08);
+  border-top: 1px solid var(--phoenix-line-strong);
   display: grid;
   gap: 1rem;
 }
@@ -96,9 +96,9 @@
 .visitor-panel-note {
   margin: 0;
   padding: 0.95rem 1rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(42, 37, 33, 0.08);
-  background: rgba(255, 255, 255, 0.78);
+  border-radius: 0.5rem;
+  border: 1px solid var(--phoenix-line-strong);
+  background: rgba(246, 244, 243, 0.4);
   color: var(--phoenix-ink-soft);
 }
 

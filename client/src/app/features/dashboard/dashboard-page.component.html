@@ -13,66 +13,90 @@
 
 <ng-template #staffDashboard>
 <div class="dashboard-shell">
-  <div class="container-fluid dashboard-layout">
-    <header class="topbar">
-      <div class="topbar-main">
-        <div class="topbar-copy topbar-copy-brand">
-          <p class="eyebrow mb-2">Phoenix Snooker Club</p>
-          <h1 class="brand-title mb-0">Phoenix Snooker Club</h1>
-          <p class="topbar-text mb-0">
-            Un seul ecran pour ajouter un joueur, lancer une partie ou cloturer une table.
-          </p>
-        </div>
-
-        <div class="topbar-stats">
-          <article class="topbar-stat">
-            <span>Libres</span>
-            <strong>{{ freeTables.length }}</strong>
-          </article>
-          <article class="topbar-stat">
-            <span>En attente</span>
-            <strong>{{ totalWaitingPlayers }}</strong>
-          </article>
-          <article class="topbar-stat">
-            <span>En cours</span>
-            <strong>{{ activeTables.length }}</strong>
-          </article>
-          <article class="topbar-stat">
-            <span>Leader</span>
-            <strong>{{ summary?.topPlayer?.name || 'Aucun' }}</strong>
-          </article>
-        </div>
+  <div class="dashboard-app">
+    <aside class="heritage-sidebar">
+      <div class="sidebar-logo-frame">
+        <img
+          class="sidebar-logo"
+          src="branding/phoenix-logo-primary-transparent.png"
+          alt="Phoenix Snooker Club"
+        />
       </div>
 
-      <div class="topbar-side">
-        <div class="user-box">
-          <div class="user-box-copy">
-            <strong>{{ user?.displayName }}</strong>
-            <small>@{{ user?.username }}</small>
-            <span>{{ roleLabel(user?.role) }}</span>
-          </div>
-          <span class="user-box-badge">Session ouverte</span>
+      <nav class="sidebar-nav" aria-label="Navigation principale">
+        <button class="sidebar-link sidebar-link-active" type="button">
+          <span class="sidebar-icon" aria-hidden="true">♘</span>
+          Gestion des tables
+        </button>
+        <button *ngIf="isSudo" class="sidebar-link" type="button" (click)="openAdminModal()">
+          <span class="sidebar-icon" aria-hidden="true">♙</span>
+          Membres
+        </button>
+        <button class="sidebar-link" type="button" (click)="openHistoryModal()">
+          <span class="sidebar-icon" aria-hidden="true">▤</span>
+          Historique
+        </button>
+        <button class="sidebar-link" type="button" (click)="openQueuesModal()">
+          <span class="sidebar-icon" aria-hidden="true">□</span>
+          Réservations
+        </button>
+        <button *ngIf="isSudo" class="sidebar-link" type="button" (click)="openAddTableModal()">
+          <span class="sidebar-icon" aria-hidden="true">＋</span>
+          Ajouter une table
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-danger btn-lg w-100 sidebar-new-entry" type="button" (click)="openAddPlayerModal()">
+          <span aria-hidden="true">⊕</span>
+          Ajouter un joueur
+        </button>
+        <button class="sidebar-link" type="button">
+          <span class="sidebar-icon" aria-hidden="true">?</span>
+          Assistance
+        </button>
+        <button class="sidebar-link" type="button" (click)="openProfileModal()">
+          <span class="sidebar-icon" aria-hidden="true">⚙</span>
+          Paramètres
+        </button>
+      </div>
+    </aside>
+
+    <main class="dashboard-main">
+      <header class="heritage-topbar">
+        <div class="topbar-copy">
+          <nav class="topbar-tabs" aria-label="Vues du tableau de bord">
+            <button class="topbar-tab topbar-tab-active" type="button">Tableau de bord</button>
+            <button class="topbar-tab" type="button" (click)="openQueuesModal()">Tables</button>
+            <button class="topbar-tab" type="button" (click)="openAddPlayerModal()">Joueurs</button>
+          </nav>
         </div>
 
-        <div class="topbar-control-grid">
+        <div class="topbar-actions">
+          <span class="topbar-divider"></span>
           <button
-            class="utility-chip"
+            class="icon-button"
             type="button"
+            aria-label="Rafraîchir"
             (click)="refresh()"
             [disabled]="isLoading || isRefreshing"
           >
-            <span
-              *ngIf="isRefreshing"
-              class="spinner-border spinner-border-sm me-2"
-            ></span>
-            Rafraichir
+            ⌁
           </button>
-          <button class="utility-chip utility-chip-danger" type="button" (click)="logout()">
-            Deconnexion
+          <button class="profile-dot" type="button" (click)="openProfileModal()" aria-label="Profil">
+            {{ profileInitials }}
+          </button>
+          <button
+            class="icon-button logout-button"
+            type="button"
+            aria-label="Déconnexion"
+            title="Déconnexion"
+            (click)="logout()"
+          >
+            ⏻
           </button>
         </div>
-      </div>
-    </header>
+      </header>
 
     <div
       *ngIf="errorMessage"
@@ -92,220 +116,330 @@
       {{ successMessage }}
     </div>
 
+    <section
+      *ngIf="poolReservationNotification as notification"
+      class="manager-notification-popup"
+      role="alert"
+      aria-live="assertive"
+    >
+      <button
+        class="manager-notification-close"
+        type="button"
+        aria-label="Masquer cette notification"
+        (click)="dismissPoolReservationNotification()"
+      >
+        ×
+      </button>
+
+      <p class="eyebrow mb-0">Alerte pool</p>
+      <h2 class="manager-notification-title mb-0">{{ poolReservationNotificationTitle }}</h2>
+      <p class="manager-notification-match mb-0">
+        {{ notification.tableName }} · {{ notification.clientName }}
+      </p>
+      <p class="manager-notification-copy mb-0">{{ poolReservationNotificationMessage }}</p>
+
+      <div class="manager-notification-meta">
+        <span class="manager-notification-chip">
+          Fin prévue : {{ notification.endsAt | date: 'shortTime' }}
+        </span>
+        <span class="manager-notification-chip">
+          Durée : {{ notification.durationMinutes }} min
+        </span>
+      </div>
+
+      <div class="manager-notification-actions">
+        <button
+          class="btn btn-danger"
+          type="button"
+          (click)="dismissPoolReservationNotification()"
+        >
+          Compris
+        </button>
+      </div>
+    </section>
+
     <div *ngIf="isLoading" class="panel panel-loading">
       <div class="spinner-border text-danger mb-3" role="status"></div>
       <p class="mb-0">Chargement de la salle...</p>
     </div>
 
     <ng-container *ngIf="dashboardState">
-      <section class="panel command-panel">
-        <div class="command-panel-copy">
-          <p class="eyebrow mb-2">Action principale</p>
-          <h2 class="mb-1">{{ mainActionLabel }}</h2>
-          <p class="panel-text mb-0">
-            {{
-              tablesReadyToStart.length
-                ? 'Des tables sont prêtes. Lance rapidement la prochaine partie.'
-                : activeTables.length
-                  ? 'Des parties sont en cours. Termine-les ici quand elles finissent.'
-                  : 'La salle est libre. Commence par ajouter un joueur dans une file.'
-            }}
-          </p>
-        </div>
-
-        <div class="command-panel-actions">
-          <button
-            class="btn btn-danger btn-lg"
-            type="button"
-            (click)="openMainAction()"
-          >
-            {{ mainActionLabel }}
-          </button>
-          <button
-            *ngIf="isSudo"
-            class="btn btn-outline-dark command-action-secondary"
-            type="button"
-            (click)="openAddTableModal()"
-          >
-            Ajouter une table
-          </button>
-          <button
-            *ngIf="mainActionLabel !== 'Ajouter un joueur'"
-            class="btn btn-outline-dark command-action-secondary"
-            type="button"
-            (click)="openAddPlayerModal()"
-          >
-            Ajouter un joueur
-          </button>
-          <button
-            class="btn btn-outline-dark command-action-secondary"
-            type="button"
-            (click)="openQueuesModal()"
-          >
-            Voir les files
-          </button>
-          <button
-            class="btn btn-outline-dark command-action-secondary"
-            type="button"
-            (click)="openHistoryModal()"
-          >
-            Historique
-          </button>
-          <button
-            *ngIf="isSudo"
-            class="btn btn-outline-dark command-action-secondary"
-            type="button"
-            (click)="openAdminModal()"
-          >
-            Comptes
-          </button>
-        </div>
+      <section class="topbar-stats heritage-stats" aria-label="Résumé de la salle">
+        <article class="topbar-stat topbar-stat-free">
+          <span class="stat-kicker"><i class="stat-dot" aria-hidden="true"></i>Tables libres</span>
+          <strong>{{ freeTables.length }}</strong>
+          <small>Disponibles maintenant</small>
+        </article>
+        <article class="topbar-stat topbar-stat-waiting">
+          <span class="stat-kicker"><i class="stat-dot" aria-hidden="true"></i>Joueurs en attente</span>
+          <strong>{{ totalWaitingPlayers }}</strong>
+          <small>Files actives</small>
+        </article>
+        <article class="topbar-stat topbar-stat-active">
+          <span class="stat-kicker"><i class="stat-dot" aria-hidden="true"></i>Tables occupées</span>
+          <strong>{{ activeTables.length }}</strong>
+          <small>Réservations et parties</small>
+        </article>
+        <article class="topbar-stat topbar-stat-leader">
+          <span class="stat-kicker"><i class="stat-dot" aria-hidden="true"></i>Meilleur joueur</span>
+          <strong>{{ summary?.topPlayer?.name || 'Aucun' }}</strong>
+          <small>Classement actuel</small>
+        </article>
       </section>
 
       <section class="dashboard-sections">
         <article class="subpanel dashboard-section">
           <div class="section-head">
-            <div>
-              <h3 class="mb-1">Tables prêtes</h3>
-              <p class="panel-text mb-0">Les prochaines parties a lancer.</p>
-            </div>
+            <button
+              class="section-collapse-button"
+              type="button"
+              [attr.aria-expanded]="!isDashboardSectionCollapsed('ready')"
+              (click)="toggleDashboardSection('ready')"
+            >
+              <h3 class="mb-0"><span class="section-title-icon" aria-hidden="true">✓</span> Tables prêtes</h3>
+              <span class="collapse-chevron" aria-hidden="true">
+                {{ isDashboardSectionCollapsed('ready') ? '+' : '−' }}
+              </span>
+            </button>
             <span class="section-badge">{{ tablesReadyToStart.length }}</span>
           </div>
 
-          <div *ngIf="tablesReadyToStart.length; else noReadyTables" class="simple-list">
-            <article *ngFor="let table of tablesReadyToStart | slice:0:4" class="simple-item">
-              <strong>{{ table.name }}</strong>
-              <span>{{ table.discipline }} - {{ waitingLabel(table) }}</span>
-              <div class="waiting-inline-list" *ngIf="table.waitingPlayers.length">
-                <span *ngFor="let entry of table.waitingPlayers | slice:0:4" class="waiting-inline-chip">
-                  {{ entry.playerName }}
+          <div *ngIf="!isDashboardSectionCollapsed('ready')" class="section-collapse-body">
+            <div *ngIf="tablesReadyToStart.length; else noReadyTables" class="simple-list">
+              <article *ngFor="let table of tablesReadyToStart | slice:0:4" class="simple-item">
+                <strong>{{ table.name }}</strong>
+                <span>
+                  {{ table.discipline }} -
+                  {{ isPoolTable(table) ? 'réservation par durée' : waitingLabel(table) }}
                 </span>
-              </div>
-              <div class="simple-actions">
-                <button class="btn btn-sm btn-danger" type="button" (click)="openStartMatchModal(table)">
-                  Demarrer
-                </button>
-              </div>
-            </article>
-          </div>
+                <div class="waiting-inline-list" *ngIf="table.waitingPlayers.length">
+                  <span *ngFor="let entry of table.waitingPlayers | slice:0:4" class="waiting-inline-chip">
+                    {{ entry.playerName }}
+                    <button
+                      class="waiting-inline-remove"
+                      type="button"
+                      [attr.aria-label]="'Supprimer ' + entry.playerName + ' de la file'"
+                      (click)="removeWaitingPlayer(table, entry)"
+                    >
+                      ×
+                    </button>
+                  </span>
+                </div>
+                <div class="simple-actions">
+                  <button class="btn btn-sm btn-danger" type="button" (click)="openStartMatchModal(table)">
+                    {{ isPoolTable(table) ? 'Réserver' : 'Démarrer' }}
+                  </button>
+                </div>
+              </article>
+            </div>
 
-          <ng-template #noReadyTables>
-            <div class="empty-inline">Aucune table n'est prete pour le moment.</div>
-          </ng-template>
+            <ng-template #noReadyTables>
+              <div class="empty-state">
+                <span class="empty-state-icon" aria-hidden="true">⚑</span>
+                <strong>Aucune table n'est prête</strong>
+                <p>Les réservations Pool et les parties Snooker prêtes apparaîtront ici.</p>
+              </div>
+            </ng-template>
+          </div>
         </article>
 
         <article class="subpanel dashboard-section">
           <div class="section-head">
-            <div>
-              <h3 class="mb-1">Parties en cours</h3>
-              <p class="panel-text mb-0">Les tables a cloturer ensuite.</p>
-            </div>
+            <button
+              class="section-collapse-button"
+              type="button"
+              [attr.aria-expanded]="!isDashboardSectionCollapsed('active')"
+              (click)="toggleDashboardSection('active')"
+            >
+              <h3 class="mb-0"><span class="section-title-icon" aria-hidden="true">◷</span> Tables occupées</h3>
+              <span class="collapse-chevron" aria-hidden="true">
+                {{ isDashboardSectionCollapsed('active') ? '+' : '−' }}
+              </span>
+            </button>
             <div class="section-head-actions">
-              <button
-                class="btn btn-sm btn-outline-dark"
-                type="button"
-                (click)="openQueuesModal(true, 'matches')"
-              >
-                Plein ecran
-              </button>
               <span class="section-badge">{{ activeTables.length }}</span>
             </div>
           </div>
 
-          <div *ngIf="activeTables.length; else noActiveTables" class="simple-list">
-            <article *ngFor="let table of activeTables | slice:0:4" class="simple-item">
-              <strong>{{ table.name }}</strong>
-              <span>
-                {{ table.currentMatch?.playerOne }} vs {{ table.currentMatch?.playerTwo }}
-              </span>
-              <span>Debut : {{ table.currentMatch?.startedAt | date: 'short' }}</span>
-              <div class="simple-actions">
-                <button class="btn btn-sm btn-outline-dark" type="button" (click)="openFinishMatchModal(table)">
-                  Terminer
-                </button>
-              </div>
-            </article>
-          </div>
+          <div *ngIf="!isDashboardSectionCollapsed('active')" class="section-collapse-body">
+            <div *ngIf="activeTables.length; else noActiveTables" class="simple-list">
+              <article *ngFor="let table of activeTables | slice:0:4" class="simple-item">
+                <strong>{{ table.name }}</strong>
+                <ng-container *ngIf="table.currentReservation as reservation; else activeMatchSummary">
+                  <span>Client : {{ reservation.clientName }}</span>
+                  <span>Fin : {{ reservation.endAt | date: 'shortTime' }}</span>
+                  <span>Montant : {{ formatDh(reservation.amountDueDh) }}</span>
+                </ng-container>
+                <ng-template #activeMatchSummary>
+                  <span>
+                    {{ table.currentMatch?.playerOne }} contre {{ table.currentMatch?.playerTwo }}
+                  </span>
+                  <span>Début : {{ table.currentMatch?.startedAt | date: 'short' }}</span>
+                  <span>Montant : {{ formatDh(table.currentMatch?.amountDueDh) }}</span>
+                </ng-template>
+                <div class="simple-actions">
+                  <button
+                    *ngIf="table.currentReservation"
+                    class="btn btn-sm btn-outline-danger"
+                    type="button"
+                    (click)="completePoolReservation(table)"
+                  >
+                    Clôturer
+                  </button>
+                  <button
+                    *ngIf="table.currentMatch"
+                    class="btn btn-sm btn-outline-dark"
+                    type="button"
+                    (click)="openFinishMatchModal(table)"
+                  >
+                    Terminer
+                  </button>
+                </div>
+              </article>
+            </div>
 
-          <ng-template #noActiveTables>
-            <div class="empty-inline">Aucune partie en cours.</div>
-          </ng-template>
+            <ng-template #noActiveTables>
+              <div class="empty-state">
+                <span class="empty-state-icon" aria-hidden="true">⌛</span>
+                <strong>Aucune table occupée</strong>
+                <p>Les réservations Pool et les parties Snooker actives seront affichées ici.</p>
+              </div>
+            </ng-template>
+          </div>
         </article>
 
         <article class="subpanel dashboard-section">
           <div class="section-head">
-            <div>
-              <h3 class="mb-1">Files d'attente</h3>
-              <p class="panel-text mb-0">Les tables qui demandent de l'attention.</p>
-            </div>
+            <button
+              class="section-collapse-button"
+              type="button"
+              [attr.aria-expanded]="!isDashboardSectionCollapsed('queues')"
+              (click)="toggleDashboardSection('queues')"
+            >
+              <h3 class="mb-0"><span class="section-title-icon" aria-hidden="true">⊞</span> Files d'attente</h3>
+              <span class="collapse-chevron" aria-hidden="true">
+                {{ isDashboardSectionCollapsed('queues') ? '+' : '−' }}
+              </span>
+            </button>
             <div class="section-head-actions">
-              <button
-                class="btn btn-sm btn-outline-danger"
-                type="button"
-                [disabled]="!totalWaitingPlayers"
-                (click)="requestResetAllWaitingLists()"
-              >
-                Vider les files
-              </button>
-              <button
-                class="btn btn-sm btn-outline-dark"
-                type="button"
-                (click)="openQueuesModal(true, 'waiting')"
-              >
-                Plein ecran
-              </button>
               <span class="section-badge">{{ totalWaitingPlayers }}</span>
             </div>
           </div>
 
-          <div *ngIf="isResetAllWaitingListsWarningVisible" class="modal-flash modal-flash-error" role="alert">
-            <strong>Confirmer la suppression des files d'attente</strong>
-            <p class="mt-2 mb-3">
-              Cette action va retirer {{ totalWaitingPlayers }} joueur(s) sur
-              {{ queuedTablesCount }} table(s). Les parties en cours ne seront pas modifiees.
-            </p>
-            <div class="simple-actions">
-              <button class="btn btn-sm btn-outline-dark" type="button" (click)="cancelResetAllWaitingLists()">
-                Annuler
-              </button>
-              <button class="btn btn-sm btn-danger" type="button" (click)="confirmResetAllWaitingLists()">
-                Vider toutes les files
-              </button>
+          <div *ngIf="!isDashboardSectionCollapsed('queues')" class="section-collapse-body">
+            <div *ngIf="isResetAllWaitingListsWarningVisible" class="modal-flash modal-flash-error" role="alert">
+              <strong>Confirmer la suppression des files d'attente</strong>
+              <p class="mt-2 mb-3">
+                Cette action va retirer {{ totalWaitingPlayers }} joueur(s) sur
+                {{ queuedTablesCount }} table(s). Les parties en cours ne seront pas modifiées.
+              </p>
+              <div class="simple-actions">
+                <button class="btn btn-sm btn-outline-dark" type="button" (click)="cancelResetAllWaitingLists()">
+                  Annuler
+                </button>
+                <button class="btn btn-sm btn-danger" type="button" (click)="confirmResetAllWaitingLists()">
+                  Vider toutes les files
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div *ngIf="totalWaitingPlayers; else noQueues" class="simple-list">
-            <ng-container *ngFor="let table of queueTables | slice:0:5">
-              <article *ngIf="table.waitingPlayers.length" class="simple-item">
-                <strong>{{ table.name }}</strong>
-                <span>{{ table.discipline }} - {{ waitingLabel(table) }}</span>
-                <div class="waiting-inline-list">
-                  <span *ngFor="let entry of table.waitingPlayers | slice:0:4" class="waiting-inline-chip">
-                    {{ entry.playerName }}
-                  </span>
-                </div>
-                <div class="simple-actions">
-                  <button class="btn btn-sm btn-outline-dark" type="button" (click)="openAddPlayerModal(table)">
-                    Ajouter ici
-                  </button>
-                  <button
-                    *ngIf="table.status === 'free' && table.waitingPlayers.length >= 2"
-                    class="btn btn-sm btn-danger"
-                    type="button"
-                    (click)="openStartMatchModal(table)"
-                  >
-                    Demarrer
-                  </button>
-                </div>
-              </article>
-            </ng-container>
-          </div>
+            <div *ngIf="totalWaitingPlayers; else noQueues" class="simple-list">
+              <ng-container *ngFor="let table of queueTables | slice:0:5">
+                <article *ngIf="table.waitingPlayers.length" class="simple-item">
+                  <strong>{{ table.name }}</strong>
+                  <span>{{ table.discipline }} - {{ waitingLabel(table) }}</span>
+                  <div class="waiting-inline-list">
+                    <span *ngFor="let entry of table.waitingPlayers | slice:0:4" class="waiting-inline-chip">
+                      {{ entry.playerName }}
+                      <button
+                        class="waiting-inline-remove"
+                        type="button"
+                        [attr.aria-label]="'Supprimer ' + entry.playerName + ' de la file'"
+                        (click)="removeWaitingPlayer(table, entry)"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  </div>
+                  <div class="simple-actions">
+                    <button class="btn btn-sm btn-outline-dark" type="button" (click)="openAddPlayerModal(table)">
+                      Ajouter ici
+                    </button>
+                    <button
+                      *ngIf="table.status === 'free' && (isPoolTable(table) || table.waitingPlayers.length >= 2)"
+                      class="btn btn-sm btn-danger"
+                      type="button"
+                      (click)="openStartMatchModal(table)"
+                    >
+                      {{ isPoolTable(table) ? 'Réserver' : 'Démarrer' }}
+                    </button>
+                  </div>
+                </article>
+              </ng-container>
+            </div>
 
-          <ng-template #noQueues>
-            <div class="empty-inline">Aucun joueur en attente actuellement.</div>
-          </ng-template>
+            <ng-template #noQueues>
+              <div class="empty-state">
+                <span class="empty-state-icon" aria-hidden="true">!</span>
+                <strong>Tables nécessitant attention</strong>
+                <p>Gérez vos réservations et vos attentes prioritaires ici.</p>
+              </div>
+            </ng-template>
+          </div>
         </article>
       </section>
+
+      <section class="tables-overview">
+        <div class="tables-overview-head">
+          <h2 class="mb-0">Vue d'ensemble des tables</h2>
+          <div class="table-legend">
+            <span><i class="legend-dot legend-dot-free"></i> Libre</span>
+            <span><i class="legend-dot legend-dot-busy"></i> Occupée</span>
+          </div>
+        </div>
+
+        <div class="table-card-grid">
+          <article *ngFor="let table of tables" class="table-card">
+            <div class="table-card-head">
+              <strong [title]="table.name">{{ table.name }}</strong>
+              <span class="table-status-dot" [class.table-status-dot-busy]="table.status === 'occupied'"></span>
+            </div>
+            <div class="table-visual" aria-hidden="true">⌘</div>
+            <div class="table-card-foot">
+              <strong>{{ tableStatusLabel(table) }}</strong>
+              <span>{{ tableActivityLabel(table) }}</span>
+              <span>{{ tableAmountLabel(table) }}</span>
+            </div>
+            <div class="simple-actions table-card-actions">
+              <button
+                class="btn btn-sm btn-outline-dark"
+                type="button"
+                (click)="openAddPlayerModal(table)"
+              >
+                Ajouter
+              </button>
+              <button
+                *ngIf="table.status === 'free' && (isPoolTable(table) || table.waitingPlayers.length >= 2)"
+                class="btn btn-sm btn-danger"
+                type="button"
+                (click)="openStartMatchModal(table)"
+              >
+                {{ isPoolTable(table) ? 'Réserver' : 'Démarrer' }}
+              </button>
+              <button
+                *ngIf="table.currentMatch"
+                class="btn btn-sm btn-danger"
+                type="button"
+                (click)="openFinishMatchModal(table)"
+              >
+                Terminer
+              </button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <button class="floating-action" type="button" (click)="openMainAction()" aria-label="Nouvelle action">+</button>
 
       <div *ngIf="activeModal" class="modal-backdrop" (click)="closeModal()">
         <div
@@ -320,7 +454,7 @@
             <div *ngIf="activeModal === 'add-table' && isSudo">
               <p class="eyebrow mb-2">Tables</p>
               <h2 class="mb-1">Ajouter une table</h2>
-              <p class="panel-text mb-0">Choisis la discipline et le numero pour creer une table libre.</p>
+              <p class="panel-text mb-0">Choisis la discipline et le numéro pour créer une table libre.</p>
             </div>
 
             <div *ngIf="activeModal === 'add-player'">
@@ -328,8 +462,8 @@
             </div>
 
             <div *ngIf="activeModal === 'start-match'">
-              <p class="eyebrow mb-2">Demarrer</p>
-              <h2 class="mb-1">Demarrer une partie</h2>
+              <p class="eyebrow mb-2">{{ isSelectedStartTablePool ? 'Réservation' : 'Démarrer' }}</p>
+              <h2 class="mb-1">{{ startModalTitle }}</h2>
             </div>
 
             <div *ngIf="activeModal === 'finish-match'">
@@ -340,19 +474,25 @@
             <div *ngIf="activeModal === 'queues'">
               <p class="eyebrow mb-2">Attentes</p>
               <h2 class="mb-1">Files d'attente par table</h2>
-              <p class="panel-text mb-0">Repere vite ou les joueurs attendent et ouvre l'action utile.</p>
+              <p class="panel-text mb-0">Repère vite où les joueurs attendent et ouvre l'action utile.</p>
             </div>
 
             <div *ngIf="activeModal === 'history'">
               <p class="eyebrow mb-2">Historique</p>
               <h2 class="mb-1">Classement et dernieres parties</h2>
-              <p class="panel-text mb-0">Consulte rapidement les meilleurs joueurs et les parties recentes.</p>
+              <p class="panel-text mb-0">Consulte rapidement les meilleurs joueurs et les parties récentes.</p>
+            </div>
+
+            <div *ngIf="activeModal === 'profile'">
+              <p class="eyebrow mb-2">Profil</p>
+              <h2 class="mb-1">Mes informations</h2>
+              <p class="panel-text mb-0">Modifie les informations du compte connecté.</p>
             </div>
 
             <div *ngIf="activeModal === 'admin'">
               <p class="eyebrow mb-2">Administration</p>
               <h2 class="mb-1">Gestion des comptes</h2>
-              <p class="panel-text mb-0">Tout l'administratif est ici, sans charger l'ecran principal.</p>
+              <p class="panel-text mb-0">Tout l'administratif est ici, sans charger l'écran principal.</p>
             </div>
 
             <div *ngIf="activeModal === 'queues'" class="section-head-actions">
@@ -371,7 +511,7 @@
                   [ngClass]="queueModalView === 'matches' ? 'btn-danger' : 'btn-outline-dark'"
                   (click)="setQueueModalView('matches')"
                 >
-                  Matchs en cours ({{ activeTables.length }})
+                  Tables occupées ({{ activeTables.length }})
                 </button>
               </div>
               <button
@@ -379,7 +519,7 @@
                 type="button"
                 (click)="toggleQueuesFullscreen()"
               >
-                {{ isQueuesFullscreen ? 'Quitter le plein ecran' : 'Plein ecran' }}
+                {{ isQueuesFullscreen ? 'Quitter le plein écran' : 'Plein écran' }}
               </button>
             </div>
 
@@ -441,10 +581,10 @@
                 <strong>{{ addTablePreviewName }}</strong>
                 <span>{{ addTableDisciplineLabel }} - identifiant {{ addTableId }}</span>
                 <span *ngIf="addTableAlreadyExists" class="text-danger">
-                  Cette table existe deja. Choisis un autre numero.
+                  Cette table existe déjà. Choisis un autre numéro.
                 </span>
                 <span *ngIf="!addTableAlreadyExists">
-                  La table sera ajoutee comme table libre, prete a recevoir des joueurs.
+                  La table sera ajoutée comme table libre, prête à recevoir des joueurs.
                 </span>
               </div>
             </div>
@@ -456,6 +596,118 @@
                 [disabled]="addTableFormRef.invalid || !canSubmitAddTable"
               >
                 Ajouter la table
+              </button>
+            </div>
+          </form>
+
+          <section *ngIf="activeModal === 'add-table' && isSudo" class="subpanel">
+            <div class="section-head">
+              <div>
+                <h3 class="mb-1">Supprimer une table</h3>
+                <p class="panel-text mb-0">
+                  Supprime uniquement une table libre, vide et sans historique.
+                </p>
+              </div>
+            </div>
+
+            <div *ngIf="deleteTableCandidate as table" class="modal-flash modal-flash-error" role="alert">
+              <strong>Confirmer la suppression de {{ table.name }}</strong>
+              <p class="mt-2 mb-3">
+                Cette action retire la table de la salle. Elle ne sera possible que si la table est vide.
+              </p>
+              <div class="simple-actions">
+                <button class="btn btn-sm btn-outline-dark" type="button" (click)="cancelDeleteTable()">
+                  Annuler
+                </button>
+                <button class="btn btn-sm btn-danger" type="button" (click)="confirmDeleteTable()">
+                  Supprimer la table
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="tables.length; else noTablesToDelete" class="simple-list">
+              <article *ngFor="let table of tables" class="simple-item">
+                <strong>{{ table.name }}</strong>
+                <span>{{ table.discipline }} - {{ deleteTableStatusText(table) }}</span>
+                <div class="simple-actions">
+                  <button
+                    class="btn btn-sm btn-outline-danger"
+                    type="button"
+                    [disabled]="!canDeleteTable(table)"
+                    [title]="deleteTableStatusText(table)"
+                    (click)="requestDeleteTable(table)"
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </article>
+            </div>
+
+            <ng-template #noTablesToDelete>
+              <div class="empty-inline">Aucune table disponible.</div>
+            </ng-template>
+          </section>
+
+          <form
+            *ngIf="activeModal === 'profile'"
+            class="admin-form"
+            (ngSubmit)="saveProfile()"
+            #profileFormRef="ngForm"
+          >
+            <div class="user-box">
+              <span class="section-badge" aria-hidden="true">{{ profileInitials }}</span>
+              <div class="d-grid gap-1 me-auto">
+                <strong>{{ user?.displayName }}</strong>
+                <span>@{{ user?.username }}</span>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-box">
+                <label class="form-label" for="profile-display-name">Nom complet</label>
+                <input
+                  id="profile-display-name"
+                  name="profileDisplayName"
+                  class="form-control"
+                  type="text"
+                  [(ngModel)]="profileForm.displayName"
+                  required
+                />
+              </div>
+
+              <div class="form-box">
+                <label class="form-label" for="profile-username">Identifiant</label>
+                <input
+                  id="profile-username"
+                  name="profileUsername"
+                  class="form-control"
+                  type="text"
+                  minlength="3"
+                  [(ngModel)]="profileForm.username"
+                  required
+                />
+              </div>
+
+              <div class="form-box form-box-wide">
+                <label class="form-label" for="profile-password">Nouveau mot de passe</label>
+                <input
+                  id="profile-password"
+                  name="profilePassword"
+                  class="form-control"
+                  type="password"
+                  minlength="4"
+                  [(ngModel)]="profileForm.password"
+                  placeholder="Laisser vide pour garder le mot de passe actuel"
+                />
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn btn-outline-dark" type="button" (click)="closeModal()">
+                Annuler
+              </button>
+              <button class="btn btn-danger" type="submit" [disabled]="profileFormRef.invalid">
+                Enregistrer
               </button>
             </div>
           </form>
@@ -542,7 +794,7 @@
                     type="button"
                     (click)="openStartMatchFromAddPlayer()"
                   >
-                    Demarrer
+                    {{ isPoolTable(table) ? 'Réserver' : 'Démarrer' }}
                   </button>
                 </div>
                 <div *ngIf="addPlayerWaitingNames.length; else noWaitingPlayers" class="waiting-inline-list">
@@ -582,7 +834,7 @@
           </form>
 
           <div *ngIf="activeModal === 'start-match' && !tablesReadyToStart.length" class="empty-inline">
-            Aucune table n'est prete. Ajoute au moins deux joueurs sur une table libre.
+            Aucune table n'est disponible. Libère une table Pool ou ajoute deux joueurs sur une table Snooker.
           </div>
 
           <form
@@ -592,8 +844,8 @@
             #startMatchForm="ngForm"
           >
             <div class="form-box form-box-wide" *ngIf="!lockedStartTableId">
-              <label class="form-label">Table prete</label>
-              <div class="table-filter-row" role="group" aria-label="Filtrer les tables pretes">
+              <label class="form-label">Table prête</label>
+              <div class="table-filter-row" role="group" aria-label="Filtrer les tables prêtes">
                 <button
                   class="table-filter-chip"
                   type="button"
@@ -627,15 +879,15 @@
                   (click)="toggleStartTableMenu()"
                 >
                   <span class="select-trigger-copy">
-                    <strong>{{ selectedStartTable?.name || 'Choisir une table prete' }}</strong>
+                    <strong>{{ selectedStartTable?.name || 'Choisir une table prête' }}</strong>
                     <small>{{ startTableSummary }}</small>
                   </span>
                   <span class="select-trigger-icon" aria-hidden="true">&#9662;</span>
                 </button>
 
                 <div *ngIf="isStartTableMenuOpen" class="select-menu">
-                  <div *ngIf="!filteredStartTables.length" class="select-menu-empty">
-                    Aucune table prete pour ce filtre.
+                <div *ngIf="!filteredStartTables.length" class="select-menu-empty">
+                    Aucune table disponible pour ce filtre.
                   </div>
                   <button
                     *ngFor="let table of filteredStartTables"
@@ -648,7 +900,7 @@
                       <strong>{{ table.name }}</strong>
                       <small>{{ table.discipline }}</small>
                     </span>
-                    <small>{{ waitingLabel(table) }}</small>
+                    <small>{{ isPoolTable(table) ? 'Réservation par durée' : waitingLabel(table) }}</small>
                   </button>
                 </div>
               </div>
@@ -658,7 +910,7 @@
               <div class="resume-box">
                 <strong>Table choisie : {{ table.name }}</strong>
                 <span>{{ table.discipline }}</span>
-                <span>{{ waitingLabel(table) }}</span>
+                <span>{{ isPoolTable(table) ? 'Réservation par durée' : waitingLabel(table) }}</span>
                 <div *ngIf="startTableWaitingNames.length" class="waiting-inline-list">
                   <span *ngFor="let player of startTableWaitingNames" class="waiting-inline-chip">
                     {{ player }}
@@ -671,7 +923,7 @@
               <div class="resume-box">
                 <strong>Selection actuelle : {{ table.name }}</strong>
                 <span>{{ table.discipline }}</span>
-                <span>{{ waitingLabel(table) }}</span>
+                <span>{{ isPoolTable(table) ? 'Réservation par durée' : waitingLabel(table) }}</span>
                 <div *ngIf="startTableWaitingNames.length" class="waiting-inline-list">
                   <span *ngFor="let player of startTableWaitingNames" class="waiting-inline-chip">
                     {{ player }}
@@ -680,7 +932,22 @@
               </div>
             </div>
 
-            <div class="form-box">
+            <div class="form-box" *ngIf="isSelectedStartTablePool">
+              <label for="modal-client-name" class="form-label">Nom du client</label>
+              <input
+                id="modal-client-name"
+                name="clientName"
+                class="form-control"
+                type="text"
+                maxlength="60"
+                [(ngModel)]="startForm.clientName"
+                placeholder="Exemple : Ahmed"
+                autocomplete="off"
+                required
+              />
+            </div>
+
+            <div class="form-box" *ngIf="!isSelectedStartTablePool">
               <label class="form-label">Joueur 1</label>
               <div *ngIf="startPlayerOneOptions.length; else noPlayerOneChoice" class="shortcut-row">
                 <button
@@ -701,7 +968,7 @@
               </ng-template>
             </div>
 
-            <div class="form-box">
+            <div class="form-box" *ngIf="!isSelectedStartTablePool">
               <label class="form-label">Joueur 2</label>
               <div *ngIf="startPlayerTwoOptions.length; else noPlayerTwoChoice" class="shortcut-row">
                 <button
@@ -722,17 +989,28 @@
               </ng-template>
             </div>
 
-            <div class="form-box" *ngIf="selectedStartTable?.discipline === 'Pool anglais'">
-              <label for="modal-duration" class="form-label">Duree (minutes)</label>
+            <div class="form-box" *ngIf="isSelectedStartTablePool">
+              <label for="modal-duration" class="form-label">Durée (minutes)</label>
               <input
                 id="modal-duration"
                 name="durationMinutes"
                 class="form-control"
                 type="number"
-                min="15"
-                step="15"
+                min="1"
+                max="480"
+                step="1"
                 [(ngModel)]="startForm.durationMinutes"
+                required
               />
+            </div>
+
+            <div class="form-box">
+              <label class="form-label">Montant à payer</label>
+              <div class="resume-box">
+                <strong>{{ startAmountLabel }}</strong>
+                <span *ngIf="isSelectedStartTablePool">40 DH / heure, calculé à la minute</span>
+                <span *ngIf="!isSelectedStartTablePool">Tarif fixe Snooker : 40 DH / partie</span>
+              </div>
             </div>
 
             <div class="form-box form-box-wide">
@@ -753,12 +1031,12 @@
                 type="submit"
                 [disabled]="startMatchForm.invalid || !canSubmitStartMatch"
               >
-                Demarrer la partie
+                {{ startSubmitLabel }}
               </button>
             </div>
           </form>
 
-          <div *ngIf="activeModal === 'finish-match' && !activeTables.length" class="empty-inline">
+          <div *ngIf="activeModal === 'finish-match' && !activeMatchTables.length" class="empty-inline">
             Aucune partie en cours pour le moment.
           </div>
 
@@ -772,7 +1050,7 @@
               <label class="form-label">Partie en cours</label>
               <div class="shortcut-row shortcut-row-grid">
                 <button
-                  *ngFor="let table of activeTables"
+                  *ngFor="let table of activeMatchTables"
                   class="shortcut-chip shortcut-chip-select"
                   type="button"
                   [class.shortcut-chip-active]="finishForm.matchId === table.currentMatch?.id"
@@ -780,7 +1058,7 @@
                 >
                   <span class="shortcut-chip-copy">
                     <strong>{{ table.name }}</strong>
-                    <small>{{ table.currentMatch?.playerOne }} vs {{ table.currentMatch?.playerTwo }}</small>
+                    <small>{{ table.currentMatch?.playerOne }} contre {{ table.currentMatch?.playerTwo }}</small>
                   </span>
                 </button>
               </div>
@@ -818,14 +1096,14 @@
               <div class="resume-box">
                 <strong>Table choisie : {{ table.name }}</strong>
                 <span>
-                  {{ table.currentMatch?.playerOne }} vs {{ table.currentMatch?.playerTwo }}
+                  {{ table.currentMatch?.playerOne }} contre {{ table.currentMatch?.playerTwo }}
                 </span>
-                <span>Debut : {{ table.currentMatch?.startedAt | date: 'short' }}</span>
+                <span>Début : {{ table.currentMatch?.startedAt | date: 'short' }}</span>
                 <span *ngIf="!table.waitingPlayers.length">
                   Rejouer disponible : aucun joueur en attente sur cette table.
                 </span>
                 <span *ngIf="table.waitingPlayers.length">
-                  Rejouer indisponible : {{ table.waitingPlayers.length }} joueur(s) attendent deja.
+                  Rejouer indisponible : {{ table.waitingPlayers.length }} joueur(s) attendent déjà.
                 </span>
               </div>
             </div>
@@ -863,8 +1141,8 @@
           </form>
 
           <div *ngIf="activeModal === 'queues'" class="modal-stack">
-            <div class="details-grid">
-              <section class="subpanel" *ngIf="queueModalView === 'waiting'">
+            <div class="details-grid details-grid-queues">
+              <section class="subpanel queue-modal-section queue-modal-section-primary" *ngIf="queueModalView === 'waiting'">
                 <div class="section-head">
                   <div>
                     <h3 class="mb-1">Files d'attente par table</h3>
@@ -875,29 +1153,119 @@
                   <span class="section-badge">{{ totalWaitingPlayers }}</span>
                 </div>
 
-                <div *ngIf="queueTables.length; else noQueueTables" class="simple-list">
-                  <article *ngFor="let table of queueTables" class="simple-item">
-                    <strong>{{ table.name }}</strong>
-                    <span>{{ table.discipline }} - {{ waitingLabel(table) }}</span>
-                    <div *ngIf="table.waitingPlayers.length; else noQueuedPlayers" class="waiting-inline-list">
-                      <span *ngFor="let entry of table.waitingPlayers" class="waiting-inline-chip">
-                        {{ entry.playerName }}
+                <div *ngIf="queueTables.length; else noQueueTables" class="queue-modal-list">
+                  <article
+                    *ngFor="let table of queueTables"
+                    class="queue-modal-card"
+                    [class.queue-modal-card-no-match]="!table.currentMatch && !table.currentReservation"
+                  >
+                    <div class="queue-modal-card-head">
+                      <div class="queue-modal-card-copy">
+                        <strong>{{ table.name }}</strong>
+                        <span>{{ table.discipline }} - {{ waitingLabel(table) }}</span>
+                      </div>
+                      <span class="section-badge queue-modal-card-badge">{{ table.waitingPlayers.length }}</span>
+                    </div>
+
+                    <div *ngIf="table.currentReservation as reservation" class="queue-modal-match-box">
+                      <span class="queue-status-badge">Réservation Pool</span>
+                      <div class="queue-modal-match-main">
+                        <div class="queue-modal-match-lineup">
+                          <strong class="queue-modal-match-player">{{ reservation.clientName }}</strong>
+                        </div>
+                        <div class="queue-modal-match-meta">
+                          <span class="queue-modal-match-meta-item">
+                            Fin : {{ reservation.endAt | date: 'shortTime' }}
+                          </span>
+                          <span class="queue-modal-match-meta-item">
+                            Montant : {{ formatDh(reservation.amountDueDh) }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div *ngIf="table.currentMatch" class="queue-modal-match-box">
+                      <span class="queue-status-badge">Match en cours</span>
+                      <div class="queue-modal-match-main">
+                        <div class="queue-modal-match-lineup">
+                          <strong class="queue-modal-match-player">{{ table.currentMatch.playerOne }}</strong>
+                          <span class="queue-modal-match-versus">contre</span>
+                          <strong class="queue-modal-match-player">{{ table.currentMatch.playerTwo }}</strong>
+                        </div>
+                        <div class="queue-modal-match-meta">
+                          <span class="queue-modal-match-meta-item">
+                            Début : {{ table.currentMatch.startedAt | date: 'short' }}
+                          </span>
+                          <span *ngIf="table.currentMatch.durationMinutes" class="queue-modal-match-meta-item">
+                            Durée : {{ table.currentMatch.durationMinutes }} min
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      *ngIf="nextWaitingPlayerName(table)"
+                      class="queue-modal-next-box"
+                      [class.queue-modal-next-box-compact]="!table.currentMatch && !table.currentReservation"
+                    >
+                      <span class="queue-next-label">Prochain</span>
+                      <strong>{{ nextWaitingPlayerName(table) }}</strong>
+                    </div>
+
+                    <div *ngIf="estimatedNextMatchStart(table) as nextStart" class="queue-modal-estimate-box">
+                      <span class="queue-estimate-label">Prochain match estimé</span>
+                      <strong>{{ nextStart | date: 'HH:mm' }}</strong>
+                    </div>
+
+                    <div *ngIf="table.waitingPlayers.length; else noQueuedPlayers" class="waiting-inline-list queue-modal-waiting-list">
+                      <span
+                        *ngFor="let entry of table.waitingPlayers; let isFirst = first"
+                        class="waiting-inline-chip"
+                        [class.queue-modal-waiting-chip-next]="isFirst"
+                      >
+                        <span *ngIf="isFirst" class="queue-modal-inline-next-badge">Prochain</span>
+                        {{ entry.position }}. {{ entry.playerName }}
+                        <button
+                          class="waiting-inline-remove"
+                          type="button"
+                          [attr.aria-label]="'Supprimer ' + entry.playerName + ' de la file'"
+                          (click)="removeWaitingPlayer(table, entry)"
+                        >
+                          ×
+                        </button>
                       </span>
                     </div>
                     <ng-template #noQueuedPlayers>
                       <div class="empty-inline">Aucun joueur en attente.</div>
                     </ng-template>
-                    <div class="simple-actions">
+
+                    <div class="simple-actions queue-modal-actions">
                       <button class="btn btn-sm btn-outline-dark" type="button" (click)="openAddPlayerModal(table)">
                         Ajouter ici
                       </button>
                       <button
-                        *ngIf="table.status === 'free' && table.waitingPlayers.length >= 2"
+                        *ngIf="table.currentReservation"
+                        class="btn btn-sm btn-outline-danger"
+                        type="button"
+                        (click)="completePoolReservation(table)"
+                      >
+                        Clôturer
+                      </button>
+                      <button
+                        *ngIf="table.currentMatch"
+                        class="btn btn-sm btn-outline-dark"
+                        type="button"
+                        (click)="openFinishMatchModal(table)"
+                      >
+                        Terminer
+                      </button>
+                      <button
+                        *ngIf="table.status === 'free' && (isPoolTable(table) || table.waitingPlayers.length >= 2)"
                         class="btn btn-sm btn-danger"
                         type="button"
                         (click)="openStartMatchModal(table)"
                       >
-                        Demarrer
+                        {{ isPoolTable(table) ? 'Réserver' : 'Démarrer' }}
                       </button>
                     </div>
                   </article>
@@ -907,59 +1275,63 @@
                 </ng-template>
               </section>
 
-              <section class="subpanel" *ngIf="queueModalView === 'matches'">
+              <section class="subpanel queue-modal-section queue-modal-section-primary" *ngIf="queueModalView === 'matches'">
                 <div class="section-head">
                   <div>
-                    <h3 class="mb-1">Matchs en cours</h3>
+                    <h3 class="mb-1">Tables occupées</h3>
                     <p class="panel-text mb-0">
-                      Suis les tables occupees sans quitter la vue des files.
+                      Suis les tables occupées sans quitter la vue des files.
                     </p>
                   </div>
                   <span class="section-badge">{{ activeTables.length }}</span>
                 </div>
 
-                <div *ngIf="activeTables.length; else noQueueMatches" class="simple-list">
+                <div *ngIf="activeTables.length; else noQueueMatches" class="queue-modal-list queue-modal-list-matches">
                   <article *ngFor="let table of activeTables" class="simple-item">
                     <strong>{{ table.name }}</strong>
-                    <span>
-                      {{ table.currentMatch?.playerOne }} vs {{ table.currentMatch?.playerTwo }}
-                    </span>
-                    <span>{{ table.discipline }} - Debut : {{ table.currentMatch?.startedAt | date: 'short' }}</span>
-                    <span *ngIf="table.currentMatch?.durationMinutes">
-                      Duree prevue : {{ table.currentMatch?.durationMinutes }} min
-                    </span>
+                    <ng-container *ngIf="table.currentReservation as reservation; else queueActiveMatch">
+                      <span>Réservation Pool - {{ reservation.clientName }}</span>
+                      <span>Fin : {{ reservation.endAt | date: 'shortTime' }}</span>
+                      <span>Montant : {{ formatDh(reservation.amountDueDh) }}</span>
+                    </ng-container>
+                    <ng-template #queueActiveMatch>
+                      <span>
+                        {{ table.currentMatch?.playerOne }} contre {{ table.currentMatch?.playerTwo }}
+                      </span>
+                      <span>{{ table.discipline }} - Début : {{ table.currentMatch?.startedAt | date: 'short' }}</span>
+                      <span>Montant : {{ formatDh(table.currentMatch?.amountDueDh) }}</span>
+                      <span *ngIf="table.currentMatch?.durationMinutes">
+                        Durée prévue : {{ table.currentMatch?.durationMinutes }} min
+                      </span>
+                    </ng-template>
                     <span *ngIf="table.waitingPlayers.length">
                       Suite en attente : {{ waitingLabel(table) }}
                     </span>
                     <div class="simple-actions">
-                      <button class="btn btn-sm btn-outline-dark" type="button" (click)="openFinishMatchModal(table)">
+                      <button
+                        *ngIf="table.currentReservation"
+                        class="btn btn-sm btn-outline-danger"
+                        type="button"
+                        (click)="completePoolReservation(table)"
+                      >
+                        Clôturer
+                      </button>
+                      <button
+                        *ngIf="table.currentMatch"
+                        class="btn btn-sm btn-outline-dark"
+                        type="button"
+                        (click)="openFinishMatchModal(table)"
+                      >
                         Terminer
                       </button>
                     </div>
                   </article>
                 </div>
                 <ng-template #noQueueMatches>
-                  <div class="empty-inline">Aucune partie en cours actuellement.</div>
+                  <div class="empty-inline">Aucune table occupée actuellement.</div>
                 </ng-template>
               </section>
 
-              <section class="subpanel">
-                <h3>Resume utile</h3>
-                <div class="simple-list">
-                  <article class="simple-item">
-                    <strong>Joueurs en attente</strong>
-                    <span>{{ totalWaitingPlayers }} au total dans la salle</span>
-                  </article>
-                  <article class="simple-item">
-                    <strong>Tables pretes</strong>
-                    <span>{{ tablesReadyToStart.length }} table(s) peuvent demarrer maintenant</span>
-                  </article>
-                  <article class="simple-item">
-                    <strong>Parties en cours</strong>
-                    <span>{{ activeTables.length }} table(s) occupee(s)</span>
-                  </article>
-                </div>
-              </section>
             </div>
           </div>
 
@@ -1060,8 +1432,8 @@
                 <div *ngIf="isClearHistoryWarningVisible" class="modal-flash modal-flash-error" role="alert">
                   <strong>Confirmer la suppression de l'historique</strong>
                   <p class="mt-2 mb-3">
-                    Cette action va supprimer {{ historyArchiveCount }} partie(s) archivee(s).
-                    Les parties en cours et les files d'attente ne seront pas modifiees.
+                    Cette action va supprimer {{ historyArchiveCount }} partie(s) archivée(s).
+                    Les parties en cours et les files d'attente ne seront pas modifiées.
                   </p>
                   <div class="simple-actions">
                     <button class="btn btn-sm btn-outline-dark" type="button" (click)="cancelClearHistory()">
@@ -1075,6 +1447,7 @@
 
                 <div class="history-results-meta" *ngIf="historyTotal">
                   <span>{{ historyRangeStart }}-{{ historyRangeEnd }} sur {{ historyTotal }} parties</span>
+                  <span>Total payé : {{ historyPaidTotalLabel }}</span>
                   <span *ngIf="historyFilters.search">Recherche : {{ historyFilters.search }}</span>
                 </div>
 
@@ -1086,8 +1459,8 @@
                   <article *ngFor="let entry of historyRows" class="simple-item simple-item-history">
                     <div class="history-item-head">
                       <div class="history-item-copy">
-                        <strong>{{ entry.playerOne }} vs {{ entry.playerTwo }}</strong>
-                        <span>{{ entry.tableName || 'Table archivee' }} - {{ entry.discipline }}</span>
+                        <strong>{{ entry.playerOne }} contre {{ entry.playerTwo }}</strong>
+                        <span>{{ entry.tableName || 'Table archivée' }} - {{ entry.discipline }}</span>
                       </div>
                       <span class="mini-badge mini-badge-muted">
                         {{ entry.winner || 'Sans gagnant' }}
@@ -1096,7 +1469,8 @@
 
                     <div class="history-item-meta">
                       <span>Fin : {{ entry.endedAt | date: 'short' }}</span>
-                      <span>Duree : {{ entry.durationMinutes || 0 }} min</span>
+                      <span>Durée : {{ entry.durationMinutes || 0 }} min</span>
+                      <span>Payé : {{ formatDh(entry.amountDueDh) }}</span>
                       <span *ngIf="entry.format">{{ entry.format }}</span>
                     </div>
                   </article>
@@ -1113,7 +1487,7 @@
                     [disabled]="historyPage === 1 || isHistoryLoading"
                     (click)="goToHistoryPage(historyPage - 1)"
                   >
-                    Precedent
+                    Précédent
                   </button>
 
                   <div class="history-page-list">
@@ -1146,9 +1520,9 @@
             <div class="admin-overview">
               <div>
                 <p class="eyebrow mb-2">Administration</p>
-                <h3 class="mb-1">Comptes de l'equipe</h3>
+                <h3 class="mb-1">Comptes de l'équipe</h3>
                 <p class="panel-text mb-0">
-                  Cree un acces puis gere les comptes existants dans la meme zone.
+                  Crée un accès puis gère les comptes existants dans la même zone.
                 </p>
               </div>
 
@@ -1173,9 +1547,9 @@
                 <div class="admin-panel-head">
                   <div>
                     <p class="eyebrow mb-2">Nouveau compte</p>
-                    <h3 class="mb-1">Ajouter un acces</h3>
+                    <h3 class="mb-1">Ajouter un accès</h3>
                     <p class="panel-text mb-0">
-                      Remplis simplement les informations utiles puis valide a droite.
+                      Remplis simplement les informations utiles puis valide à droite.
                     </p>
                   </div>
                 </div>
@@ -1215,13 +1589,13 @@
                       class="form-control"
                       type="password"
                       [(ngModel)]="accountForm.password"
-                      placeholder="Minimum 4 caracteres"
+                      placeholder="Minimum 4 caractères"
                       required
                     />
                   </div>
 
                   <div class="form-box">
-                    <label class="form-label" for="account-role">Niveau d'acces</label>
+                    <label class="form-label" for="account-role">Niveau d'accès</label>
                     <div class="shortcut-row shortcut-row-grid">
                       <button
                         class="shortcut-chip shortcut-chip-select"
@@ -1231,7 +1605,7 @@
                       >
                         <span class="shortcut-chip-copy">
                           <strong>Utilisateur</strong>
-                          <small>Reservation et consultation</small>
+                          <small>Réservation et consultation</small>
                         </span>
                       </button>
                       <button
@@ -1253,15 +1627,115 @@
                       >
                         <span class="shortcut-chip-copy">
                           <strong>Super admin</strong>
-                          <small>Gestion complete</small>
+                          <small>Gestion complète</small>
                         </span>
                       </button>
                     </div>
                   </div>
 
+                  <div class="form-box" *ngIf="accountForm.role === 'admin'">
+                    <label class="form-label">Tables à gérer</label>
+                    <div class="simple-list">
+                      <article class="simple-item">
+                        <strong>Tables Pool</strong>
+                        <div class="input-group mt-2">
+                          <select
+                            id="account-pool-table"
+                            name="accountPoolTableId"
+                            class="form-select"
+                            [(ngModel)]="accountPoolTableId"
+                          >
+                            <option value="">Choisir une table pool</option>
+                            <option
+                              *ngFor="let table of accountPoolTables"
+                              [value]="table.id"
+                              [disabled]="isAccountTableSelected(table.id) || isAccountTableAssignedToOther(table.id)"
+                            >
+                              {{ accountTableOptionLabel(table) }}
+                            </option>
+                          </select>
+                          <button
+                            class="btn btn-outline-dark"
+                            type="button"
+                            [disabled]="!accountPoolTableId || isAccountTableSelected(accountPoolTableId) || isAccountTableAssignedToOther(accountPoolTableId)"
+                            (click)="addAccountTable(accountPoolTableId)"
+                          >
+                            Ajouter
+                          </button>
+                        </div>
+                        <div class="simple-actions mt-2">
+                          <button class="btn btn-sm btn-outline-dark" type="button" (click)="addAccountTablesByDiscipline('pool')">
+                            Tout Pool
+                          </button>
+                          <button class="btn btn-sm btn-outline-danger" type="button" (click)="clearAccountTables('pool')">
+                            Retirer Pool
+                          </button>
+                        </div>
+                      </article>
+
+                      <article class="simple-item">
+                        <strong>Tables Snooker</strong>
+                        <div class="input-group mt-2">
+                          <select
+                            id="account-snooker-table"
+                            name="accountSnookerTableId"
+                            class="form-select"
+                            [(ngModel)]="accountSnookerTableId"
+                          >
+                            <option value="">Choisir une table snooker</option>
+                            <option
+                              *ngFor="let table of accountSnookerTables"
+                              [value]="table.id"
+                              [disabled]="isAccountTableSelected(table.id) || isAccountTableAssignedToOther(table.id)"
+                            >
+                              {{ accountTableOptionLabel(table) }}
+                            </option>
+                          </select>
+                          <button
+                            class="btn btn-outline-dark"
+                            type="button"
+                            [disabled]="!accountSnookerTableId || isAccountTableSelected(accountSnookerTableId) || isAccountTableAssignedToOther(accountSnookerTableId)"
+                            (click)="addAccountTable(accountSnookerTableId)"
+                          >
+                            Ajouter
+                          </button>
+                        </div>
+                        <div class="simple-actions mt-2">
+                          <button class="btn btn-sm btn-outline-dark" type="button" (click)="addAccountTablesByDiscipline('snooker')">
+                            Tout Snooker
+                          </button>
+                          <button class="btn btn-sm btn-outline-danger" type="button" (click)="clearAccountTables('snooker')">
+                            Retirer Snooker
+                          </button>
+                        </div>
+                      </article>
+                    </div>
+
+                    <div *ngIf="selectedAccountTables.length; else noManagedTablesSelected" class="waiting-inline-list mt-2">
+                      <span *ngFor="let table of selectedAccountTables" class="waiting-inline-chip">
+                        {{ table.name }}
+                        <button
+                          class="waiting-inline-remove"
+                          type="button"
+                          [attr.aria-label]="'Retirer ' + table.name"
+                          (click)="removeAccountTable(table.id)"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    </div>
+                    <ng-template #noManagedTablesSelected>
+                      <div class="empty-inline mt-2">Sélectionne au moins une table pour ce gestionnaire.</div>
+                    </ng-template>
+                  </div>
+
                   <div class="form-actions">
-                    <button class="btn btn-danger" type="submit" [disabled]="accountCreateForm.invalid">
-                      Creer le compte
+                    <button
+                      class="btn btn-danger"
+                      type="submit"
+                      [disabled]="accountCreateForm.invalid || !canSubmitCreateAccount"
+                    >
+                      Créer le compte
                     </button>
                   </div>
                 </form>
@@ -1271,9 +1745,9 @@
                 <div class="admin-panel-head">
                   <div>
                     <p class="eyebrow mb-2">Comptes existants</p>
-                    <h3 class="mb-1">Acces deja crees</h3>
+                    <h3 class="mb-1">Accès déjà créés</h3>
                     <p class="panel-text mb-0">
-                      Active, desactive ou supprime un acces depuis la carte du compte.
+                      Active, désactive ou supprime un accès depuis la carte du compte.
                     </p>
                   </div>
                 </div>
@@ -1284,6 +1758,7 @@
                       <div class="admin-account-copy">
                         <strong>{{ account.displayName }}</strong>
                         <span>@{{ account.username }}</span>
+                        <span>{{ accountManagedTablesLabel(account) }}</span>
                       </div>
 
                       <div class="admin-account-badges">
@@ -1293,6 +1768,57 @@
                         <span class="mini-badge" [class.mini-badge-muted]="!account.isActive">
                           {{ accountStatusLabel(account) }}
                         </span>
+                      </div>
+                    </div>
+
+                    <div *ngIf="account.role === 'admin'" class="admin-managed-tables">
+                      <div class="admin-managed-tables-head">
+                        <strong>Tables à gérer</strong>
+                        <div class="simple-actions">
+                          <button
+                            class="btn btn-sm btn-outline-dark"
+                            type="button"
+                            (click)="setManagedAccountTablesByDiscipline(account, 'pool')"
+                          >
+                            Tout Pool
+                          </button>
+                          <button
+                            class="btn btn-sm btn-outline-dark"
+                            type="button"
+                            (click)="setManagedAccountTablesByDiscipline(account, 'snooker')"
+                          >
+                            Tout Snooker
+                          </button>
+                          <button
+                            class="btn btn-sm btn-outline-danger"
+                            type="button"
+                            (click)="clearManagedAccountTablesByDiscipline(account, 'pool')"
+                          >
+                            Retirer Pool
+                          </button>
+                          <button
+                            class="btn btn-sm btn-outline-danger"
+                            type="button"
+                            (click)="clearManagedAccountTablesByDiscipline(account, 'snooker')"
+                          >
+                            Retirer Snooker
+                          </button>
+                        </div>
+                      </div>
+
+                      <div class="admin-managed-table-list" role="group" [attr.aria-label]="'Tables assignées à ' + account.displayName">
+                        <button
+                          *ngFor="let table of tables"
+                          class="shortcut-chip shortcut-chip-select"
+                          type="button"
+                          [class.shortcut-chip-active]="isManagedAccountTableSelected(account, table.id)"
+                          [disabled]="isManagedAccountTableAssignedToOther(account, table.id)"
+                          [title]="managedAccountTableTitle(account, table)"
+                          (click)="toggleManagedAccountTable(account, table.id)"
+                        >
+                          <span>{{ table.name }}</span>
+                          <small>{{ table.shortDiscipline }}</small>
+                        </button>
                       </div>
                     </div>
 
@@ -1325,6 +1851,7 @@
         </div>
       </div>
     </ng-container>
+    </main>
   </div>
 </div>
 </ng-template>

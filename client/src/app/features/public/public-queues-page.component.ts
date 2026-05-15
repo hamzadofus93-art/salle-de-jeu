@@ -54,7 +54,10 @@ export class PublicQueuesPageComponent implements OnInit {
 
   protected get visibleTables(): DashboardTable[] {
     return this.queueTables.filter(
-      (table) => table.waitingPlayers.length > 0 || !!table.currentMatch,
+      (table) =>
+        table.waitingPlayers.length > 0
+        || !!table.currentMatch
+        || !!table.currentReservation,
     );
   }
 
@@ -81,10 +84,18 @@ export class PublicQueuesPageComponent implements OnInit {
   protected estimatedNextMatchStart(table: DashboardTable): number | null {
     if (
       table.discipline !== 'Pool anglais'
-      || !table.currentMatch
       || !table.waitingPlayers.length
-      || !table.currentMatch.durationMinutes
     ) {
+      return null;
+    }
+
+    if (table.currentReservation) {
+      const reservationEndAt = new Date(table.currentReservation.endAt).getTime();
+
+      return Number.isFinite(reservationEndAt) ? reservationEndAt : null;
+    }
+
+    if (!table.currentMatch?.durationMinutes) {
       return null;
     }
 
@@ -150,7 +161,11 @@ export class PublicQueuesPageComponent implements OnInit {
     const hasVisibleTable = this.tables.some(
       (table) =>
         table.id === this.fullscreenTableId
-        && (table.waitingPlayers.length > 0 || !!table.currentMatch),
+        && (
+          table.waitingPlayers.length > 0
+          || !!table.currentMatch
+          || !!table.currentReservation
+        ),
     );
 
     if (!hasVisibleTable) {

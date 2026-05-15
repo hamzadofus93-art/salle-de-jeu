@@ -52,6 +52,10 @@ export function renderLeaderboard() {
 export function renderHistory() {
   const { elements, state } = appContext;
   const recentMatches = state.history.slice(0, 8);
+  const totalPaidDh = state.history.reduce(
+    (total, match) => total + getMatchAmountDue(match),
+    0,
+  );
 
   if (recentMatches.length === 0) {
     elements.historyList.innerHTML =
@@ -61,7 +65,7 @@ export function renderHistory() {
     return;
   }
 
-  elements.historyCaption.textContent = `${state.history.length} match(s) archives. Les 8 plus recents sont affiches ici.`;
+  elements.historyCaption.textContent = `${state.history.length} match(s) archives. Total paye: ${formatDh(totalPaidDh)}. Les 8 plus recents sont affiches ici.`;
   elements.historyList.innerHTML = recentMatches
     .map(
       (match) => `
@@ -83,6 +87,9 @@ export function renderHistory() {
             <p class="history-meta">
               Vainqueur: <strong>${escapeHtml(match.winner)}</strong>
             </p>
+            <p class="history-meta">
+              Paye: <strong>${formatDh(getMatchAmountDue(match))}</strong>
+            </p>
             ${
               match.note
                 ? `<p class="history-note">${escapeHtml(match.note)}</p>`
@@ -99,6 +106,39 @@ export function renderHistory() {
       `,
     )
     .join("");
+}
+
+function getMatchAmountDue(match) {
+  if (match?.discipline === "Snooker") {
+    return 40;
+  }
+
+  if (match?.discipline !== "Pool anglais") {
+    return 0;
+  }
+
+  const durationMinutes = Number(match.durationMinutes);
+
+  if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+    return 0;
+  }
+
+  return Math.round(((durationMinutes * 40) / 60) * 100) / 100;
+}
+
+function formatDh(amount) {
+  const value = Number(amount);
+
+  if (!Number.isFinite(value)) {
+    return "-- DH";
+  }
+
+  const hasDecimals = Math.round(value) !== value;
+
+  return `${value.toLocaleString("fr-FR", {
+    minimumFractionDigits: hasDecimals ? 2 : 0,
+    maximumFractionDigits: 2,
+  })} DH`;
 }
 
 export function handleResetData() {

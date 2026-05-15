@@ -1,5 +1,6 @@
 import {
   cancelReservation,
+  completeReservation,
   createReservation,
   listReservations,
   updateReservation,
@@ -26,6 +27,14 @@ export async function updateReservationController(request, response) {
 
 export async function cancelReservationController(request, response) {
   const reservation = await cancelReservation(
+    request.user,
+    request.params.reservationId,
+  );
+  response.status(200).json({ reservation });
+}
+
+export async function completeReservationController(request, response) {
+  const reservation = await completeReservation(
     request.user,
     request.params.reservationId,
   );

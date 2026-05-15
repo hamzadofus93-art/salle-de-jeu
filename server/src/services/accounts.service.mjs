@@ -6,6 +6,7 @@ import { toPublicUser } from "../utils/serializers.mjs";
 
 export async function listAccounts() {
   const users = await prisma.user.findMany({
+    include: { managedTables: true },
     orderBy: { createdAt: "asc" },
   });
 
@@ -29,6 +30,7 @@ export async function createAccount(actor, payload) {
   const username = sanitizeUsername(payload?.username);
   const password = sanitizeText(payload?.password, 120);
   const role = normalizeRole(payload?.role);
+  const managedTableIds = await normalizeManagedTableIds(payload?.managedTableIds || payload?.tableIds);
 
   if (!displayName || !username || !password) {
     throw badRequest("Nom, identifiant et mot de passe sont obligatoires.");
@@ -42,12 +44,20 @@ export async function createAccount(actor, payload) {
     throw badRequest("Le mot de passe doit contenir au moins 4 caracteres.");
   }
 
+  if (role === "ADMIN" && managedTableIds.length === 0) {
+    throw badRequest("Assigne au moins une table a ce gestionnaire.");
+  }
+
   const existingUser = await prisma.user.findUnique({
     where: { username },
   });
 
   if (existingUser) {
     throw badRequest("Cet identifiant existe deja.");
+  }
+
+  if (role === "ADMIN") {
+    await assertManagedTablesAvailable(managedTableIds);
   }
 
   const passwordHash = await hashPassword(password);
@@ -58,7 +68,12 @@ export async function createAccount(actor, payload) {
       passwordHash,
       role,
       isActive: true,
+      managedTables:
+        role === "ADMIN"
+          ? { connect: managedTableIds.map((id) => ({ id })) }
+          : undefined,
     },
+    include: { managedTables: true },
   });
 
   return toPublicUser(user);
@@ -99,6 +114,46 @@ export async function updateAccountStatus(actor, accountId, isActive) {
     data: {
       isActive: nextStatus,
     },
+    include: { managedTables: true },
+  });
+
+  return toPublicUser(updatedUser);
+}
+
+export async function updateAccountManagedTables(actor, accountId, payload) {
+  assertSudo(actor);
+
+  const user = await prisma.user.findUnique({
+    where: { id: accountId },
+    include: { managedTables: true },
+  });
+
+  if (!user) {
+    throw notFound("Compte introuvable.");
+  }
+
+  if (user.role !== "ADMIN") {
+    throw badRequest("Les tables peuvent etre assignees uniquement a un gestionnaire.");
+  }
+
+  const managedTableIds = await normalizeManagedTableIds(
+    payload?.managedTableIds || payload?.tableIds,
+  );
+
+  if (!managedTableIds.length) {
+    throw badRequest("Assigne au moins une table a ce gestionnaire.");
+  }
+
+  await assertManagedTablesAvailable(managedTableIds, accountId);
+
+  const updatedUser = await prisma.user.update({
+    where: { id: accountId },
+    data: {
+      managedTables: {
+        set: managedTableIds.map((id) => ({ id })),
+      },
+    },
+    include: { managedTables: true },
   });
 
   return toPublicUser(updatedUser);
@@ -155,6 +210,84 @@ function assertSudo(actor) {
   if (!actor || actor.role !== "SUDO") {
     throw forbidden("Action reservee aux comptes sudo.");
   }
+}
+
+async function normalizeManagedTableIds(value) {
+  const requestedIds = Array.isArray(value)
+    ? value
+    : String(value || "")
+        .split(",")
+        .map((entry) => entry.trim())
+        .filter(Boolean);
+
+  const uniqueIds = Array.from(
+    new Set(
+      requestedIds
+        .map((entry) => sanitizeText(entry, 50))
+        .filter(Boolean),
+    ),
+  );
+
+  if (!uniqueIds.length) {
+    return [];
+  }
+
+  const tables = await prisma.gameTable.findMany({
+    where: {
+      id: { in: uniqueIds },
+    },
+    select: { id: true },
+  });
+
+  if (tables.length !== uniqueIds.length) {
+    throw badRequest("Une des tables assignees est introuvable.");
+  }
+
+  return uniqueIds;
+}
+
+async function assertManagedTablesAvailable(tableIds, accountIdToIgnore = null) {
+  if (!tableIds.length) {
+    return;
+  }
+
+  const unavailableTables = await prisma.gameTable.findMany({
+    where: {
+      id: { in: tableIds },
+      managers: {
+        some: {
+          role: "ADMIN",
+          ...(accountIdToIgnore ? { id: { not: accountIdToIgnore } } : {}),
+        },
+      },
+    },
+    include: {
+      managers: {
+        where: {
+          role: "ADMIN",
+          ...(accountIdToIgnore ? { id: { not: accountIdToIgnore } } : {}),
+        },
+        select: {
+          displayName: true,
+        },
+      },
+    },
+  });
+
+  if (!unavailableTables.length) {
+    return;
+  }
+
+  const unavailableTableLabels = unavailableTables
+    .map((table) => {
+      const managerName = table.managers[0]?.displayName || "un autre gestionnaire";
+      return `${table.name} (${managerName})`;
+    })
+    .join(", ");
+
+  throw badRequest(
+    `Table deja assignee a un autre gestionnaire: ${unavailableTableLabels}.`,
+  );
 }
 
 function getRolePriority(role) {

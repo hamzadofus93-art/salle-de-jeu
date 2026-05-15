@@ -1,9 +1,12 @@
 import { prisma } from "../db/prisma.mjs";
+import { managedTableWhere } from "./table-access.service.mjs";
 import { toPublicMatch, toPublicTable } from "../utils/serializers.mjs";
 
-export async function getDashboardState(limit = 8) {
+export async function getDashboardState(actor, limit = 8) {
+  const tableWhere = managedTableWhere(actor);
   const [tables, leaderboard, history] = await Promise.all([
     prisma.gameTable.findMany({
+      where: tableWhere,
       include: {
         matches: {
           where: { status: "ACTIVE" },
@@ -12,11 +15,16 @@ export async function getDashboardState(limit = 8) {
         waitingEntries: {
           orderBy: { position: "asc" },
         },
+        reservations: {
+          where: { status: "UPCOMING" },
+          include: { user: true },
+          orderBy: { endAt: "asc" },
+        },
       },
       orderBy: { name: "asc" },
     }),
-    getLeaderboard(),
-    getHistory({ pageSize: limit }),
+    getLeaderboard(actor),
+    getHistory({ actor, pageSize: limit }),
   ]);
 
   const publicTables = [...tables]
@@ -46,16 +54,18 @@ export async function getDashboardState(limit = 8) {
     leaderboard: leaderboard.rows,
     history: history.rows,
     historyTotal: history.total,
+    historyPaidTotalDh: history.totalPaidDh,
   };
 }
 
-export async function getLeaderboard() {
+export async function getLeaderboard(actor = null) {
   const finishedMatches = await prisma.match.findMany({
     where: {
       status: "FINISHED",
       winnerName: {
         not: null,
       },
+      ...managedMatchWhere(actor),
     },
     orderBy: { endedAt: "desc" },
   });
@@ -105,8 +115,10 @@ export async function getHistory(options = {}) {
   const pageSize = parsePositiveInteger(normalizedOptions.pageSize, 8, { max: 50 });
   const discipline = normalizeHistoryDiscipline(normalizedOptions.discipline);
   const search = normalizeSearch(normalizedOptions.search);
+  const actor = normalizedOptions.actor || null;
   const where = {
     status: "FINISHED",
+    ...managedMatchWhere(actor),
     ...(discipline ? { discipline } : {}),
     ...(search
       ? {
@@ -119,7 +131,13 @@ export async function getHistory(options = {}) {
         }
       : {}),
   };
-  const total = await prisma.match.count({ where });
+  const [total, totalMatches] = await Promise.all([
+    prisma.match.count({ where }),
+    prisma.match.findMany({
+      where,
+      orderBy: { endedAt: "desc" },
+    }),
+  ]);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages);
   const matches = await prisma.match.findMany({
@@ -132,6 +150,7 @@ export async function getHistory(options = {}) {
 
   return {
     total,
+    totalPaidDh: sumPaidMatches(totalMatches),
     page: safePage,
     pageSize,
     totalPages,
@@ -140,6 +159,28 @@ export async function getHistory(options = {}) {
       tableName: match.table?.name || null,
     })),
   };
+}
+
+function sumPaidMatches(matches) {
+  return matches.reduce((total, match) => {
+    const amountDueDh = Number(toPublicMatch(match).amountDueDh);
+
+    if (!Number.isFinite(amountDueDh)) {
+      return total;
+    }
+
+    return Math.round((total + amountDueDh) * 100) / 100;
+  }, 0);
+}
+
+function managedMatchWhere(actor) {
+  const tableWhere = managedTableWhere(actor);
+
+  if (!Object.keys(tableWhere).length) {
+    return {};
+  }
+
+  return { table: tableWhere };
 }
 
 export async function clearHistoryArchive() {

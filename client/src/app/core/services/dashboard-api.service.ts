@@ -76,6 +76,7 @@ export class DashboardApiService {
     username: string;
     password: string;
     role: string;
+    managedTableIds?: string[];
   }) {
     return this.http.post<{ account: AccountsResponse['accounts'][number] }>(
       `${API_BASE_URL}/accounts`,
@@ -90,13 +91,20 @@ export class DashboardApiService {
     );
   }
 
+  updateAccountManagedTables(accountId: string, managedTableIds: string[]) {
+    return this.http.patch<{ account: AccountsResponse['accounts'][number] }>(
+      `${API_BASE_URL}/accounts/${accountId}/managed-tables`,
+      { managedTableIds },
+    );
+  }
+
   deleteAccount(accountId: string) {
     return this.http.delete<void>(`${API_BASE_URL}/accounts/${accountId}`);
   }
 
   createReservation(payload: {
     tableId: string;
-    startAt: string;
+    clientName: string;
     durationMinutes: number;
     note?: string;
   }) {
@@ -110,7 +118,8 @@ export class DashboardApiService {
     reservationId: string,
     payload: {
       tableId: string;
-      startAt: string;
+      clientName?: string;
+      startAt?: string;
       durationMinutes: number;
       note?: string;
     },
@@ -127,6 +136,13 @@ export class DashboardApiService {
     );
   }
 
+  completeReservation(reservationId: string) {
+    return this.http.post<ReservationResponse>(
+      `${API_BASE_URL}/reservations/${reservationId}/complete`,
+      {},
+    );
+  }
+
   addWaitingPlayer(tableId: string, playerName: string) {
     return this.http.post<TableResponse>(
       `${API_BASE_URL}/tables/${tableId}/waiting-list`,
@@ -136,6 +152,14 @@ export class DashboardApiService {
 
   createTable(payload: { discipline: 'pool' | 'snooker'; tableNumber: number }) {
     return this.http.post<TableResponse>(`${API_BASE_URL}/tables`, payload);
+  }
+
+  deleteTable(tableId: string) {
+    const normalizedTableId = encodeURIComponent(tableId.trim());
+
+    return this.http.delete<{ deletedTableId: string }>(
+      `${API_BASE_URL}/tables/${normalizedTableId}`,
+    );
   }
 
   removeWaitingPlayer(tableId: string, entryId: string) {

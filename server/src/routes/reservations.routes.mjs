@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   cancelReservationController,
+  completeReservationController,
   createReservationController,
   listReservationsController,
   updateReservationController,
@@ -13,6 +14,7 @@ const router = Router();
 router.use(requireAuth);
 router.get("/", asyncHandler(listReservationsController));
 router.post("/", asyncHandler(createReservationController));
+router.post("/:reservationId/complete", asyncHandler(completeReservationController));
 router.patch("/:reservationId", asyncHandler(updateReservationController));
 router.delete("/:reservationId", asyncHandler(cancelReservationController));
 
